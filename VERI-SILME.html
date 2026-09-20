@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zihin Kampı — Veri Silme Talebi</title>
+<style>
+  :root{ --brand:#4a2a6b; --brand2:#1b2a5e; --gul:#a83b5c; --ink:#1c1c22;
+         --ink2:#5c666f; --line:#e2e0ea; --soft:#f6f3fb; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:#f4f2f8; color:var(--ink);
+        font:16px/1.65 -apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; }
+  .kap{ max-width:760px; margin:0 auto; padding:0 20px 64px; }
+  header{ background:linear-gradient(135deg,#1b2a5e 0%,#4a2a6b 58%,#a83b5c 100%);
+          color:#fff; padding:44px 20px 40px; margin-bottom:28px; }
+  header .kap{ padding-bottom:0; }
+  header .ust{ opacity:.75; font-weight:700; letter-spacing:.6px; font-size:.82rem; }
+  header h1{ margin:8px 0 6px; font-size:2rem; letter-spacing:-.4px; }
+  header p{ margin:0; opacity:.86; }
+  h2{ color:var(--brand); font-size:1.22rem; margin:34px 0 10px;
+      padding-left:14px; border-left:5px solid var(--brand); }
+  h3{ color:var(--brand2); font-size:1.02rem; margin:22px 0 6px; }
+  p,li{ color:#2b2b33; }
+  .ozet{ background:#fff; border:2px solid var(--line); border-radius:16px;
+         padding:20px 22px; margin:0 0 8px; }
+  .ozet ul{ margin:10px 0 0; padding-left:20px; }
+  .ozet li{ margin:6px 0; }
+  .vurgu{ background:#edf7f1; border:2px solid #cfe6d9; border-radius:14px;
+          padding:14px 18px; margin:18px 0; }
+  table{ width:100%; border-collapse:collapse; margin:14px 0; background:#fff;
+         border-radius:12px; overflow:hidden; }
+  th,td{ text-align:left; padding:11px 14px; border-bottom:1px solid var(--line);
+         font-size:.95rem; vertical-align:top; }
+  th{ background:var(--brand); color:#fff; font-weight:700; }
+  tr:last-child td{ border-bottom:none; }
+  code{ background:var(--soft); padding:2px 6px; border-radius:5px; font-size:.9em; }
+  footer{ margin-top:44px; padding-top:22px; border-top:2px solid var(--line);
+          color:var(--ink2); font-size:.9rem; }
+  a{ color:var(--gul); }
+  .en{ margin-top:56px; padding-top:34px; border-top:3px solid var(--line); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="kap">
+    <div class="ust">ZİHİN KAMPI · 4'TEN 5'E KÖPRÜ</div>
+    <h1>Veri Silme Talebi</h1>
+    <p>Güncelleme: 20 Eylül 2026 · Uygulama: <code>com.onursahin.zihinkampi</code></p>
+  </div>
+</header>
+
+<div class="kap">
+
+<div class="ozet">
+  <strong>Kısa hâli:</strong> Zihin Kampı'nda <strong>hesap yoktur</strong>;
+  silinecek bir üyelik ya da profil bulunmaz. Çocuğun bilgileri yalnız
+  telefonun kendi içinde durur ve uygulamadan tek dokunuşla silinir.
+  Sunucuda yalnızca canlı karşılıklı oyun sırasında geçici bir <em>oyun
+  odası</em> oluşur; o da kendiliğinden silinir. Yine de hemen silinmesini
+  isteyebilirsiniz — aşağıda nasıl olduğu yazılı.
+</div>
+
+<h2>1. Uygulamanın tuttuğu veriler</h2>
+<table>
+  <tr><th>Nerede</th><th>Ne</th><th>Nasıl silinir</th></tr>
+  <tr>
+    <td><strong>Telefonda</strong> (hep)</td>
+    <td>Çocuğun adı, test sonuçları, rozet ve seviye, seçilen program,
+        veli PIN'inin geri döndürülemez özeti, isteğe bağlı veli e-postası</td>
+    <td>Uygulamanın içinden, anında — <strong>Bölüm 2</strong></td>
+  </tr>
+  <tr>
+    <td><strong>Sunucuda</strong> (yalnız canlı oyun açıkken)</td>
+    <td>Oyun odası: 5 haneli rastgele oda kodu, hamleler, süreler, puanlar,
+        zaman damgaları. Ad, yaş, konum, cihaz kimliği ya da hesap bilgisi
+        <strong>yoktur</strong></td>
+    <td>Kendiliğinden siliniyor; istenirse hemen — <strong>Bölüm 3</strong></td>
+  </tr>
+</table>
+<p>
+  Canlı oyun özelliği <strong>varsayılan olarak kapalıdır</strong> ve yalnız
+  veli, PIN'li Veli Paneli'nden açar. Kapalıyken uygulama hiçbir sunucuya
+  bağlanmaz; o durumda sunucuda hiçbir veriniz yoktur.
+</p>
+
+<h2>2. Telefondaki verileri silme (kendiniz, anında)</h2>
+<ul>
+  <li><strong>Uygulamanın içinden:</strong> Veli Paneli → <em>Tehlikeli Bölge</em>
+      → <em>Geçmişi sil</em>. Her şeyi silmek için aynı bölümdeki
+      <em>Tüm verileri sil</em>. Bu bölüm bir yetişkin doğrulamasının
+      arkasındadır (veli PIN'i ya da iki basamaklı bir çarpma sorusu) —
+      amacı çocuğun kazara silmesini önlemektir.</li>
+  <li><strong>Android ayarlarından:</strong> Ayarlar → Uygulamalar →
+      Zihin Kampı → Depolama → <em>Verileri temizle</em>.</li>
+  <li><strong>Uygulamayı kaldırmak</strong> da bütün yerel verileri siler.</li>
+</ul>
+<p>
+  Bu veriler hiçbir zaman telefondan çıkmadığı için bizde bir kopyası yoktur;
+  silme işlemi anında ve geri dönüşsüzdür, bize talep göndermeniz gerekmez.
+</p>
+
+<h2>3. Sunucudaki oyun odasının silinmesi</h2>
+<div class="vurgu">
+  <strong>Kendiliğinden:</strong> oda, oyunu kuran taraf çıktığında silinir.
+  Yarıda kalan odalar <strong>ayda bir</strong> toplu olarak silinir — yani
+  hiçbir oyun verisi 90 günden uzun süre durmaz.
+</div>
+<p>
+  Belirli bir odanın <strong>hemen</strong> silinmesini istiyorsanız
+  <a href="mailto:onurgsahin@gmail.com?subject=Veri%20silme%20talebi">onurgsahin@gmail.com</a>
+  adresine yazmanız yeterlidir. E-postada şunlar olsun:
+</p>
+<ul>
+  <li>Konu: <strong>Veri silme talebi</strong></li>
+  <li><strong>Oda kodu</strong> (oyun ekranında görünen 5 haneli sayı)</li>
+  <li>Oyunun oynandığı yaklaşık tarih ve saat</li>
+</ul>
+<p>
+  Talebi aldıktan sonra oda en geç <strong>30 gün içinde</strong> (uygulamada
+  genellikle birkaç gün içinde) silinir ve silindiğine dair size yanıt
+  yazılır. Oda kodu bilinmiyorsa, tarih aralığı verilerek o aralıktaki odalar
+  silinebilir.
+</p>
+<p>
+  Odalar kimseye bağlı olmadığı için (ad, hesap ya da cihaz kimliği
+  tutulmaz), bir odayı sahibiyle eşleştirmenin tek yolu oda kodudur. Bu,
+  gizliliği korumak için bilerek böyledir.
+</p>
+
+<h2>4. Hesap silme</h2>
+<p>
+  Zihin Kampı <strong>hesap oluşturmaz</strong>: kullanıcı adı, şifre, e-posta
+  kaydı, telefon doğrulaması ya da başka bir servisle giriş yoktur. Bu yüzden
+  silinecek bir hesap da yoktur. Veli PIN'i telefonda duran yerel bir kilittir,
+  hesap değildir; Veli Paneli'nden sıfırlanır ya da <em>Tüm verileri sil</em>
+  ile kaldırılır.
+</p>
+
+<h2>5. İletişim</h2>
+<p>
+  <a href="mailto:onurgsahin@gmail.com">onurgsahin@gmail.com</a> ·
+  Dr. Onur Şahin (bireysel geliştirici) ·
+  <a href="./">Gizlilik Politikası</a>
+</p>
+
+<!-- ================= ENGLISH ================= -->
+<div class="en">
+<h2>Data Deletion Request (English)</h2>
+
+<div class="ozet">
+  <strong>In short:</strong> Zihin Kampı has <strong>no accounts</strong>, so
+  there is no profile to delete. Everything about the child is stored only on
+  the phone and can be erased from inside the app. The only server-side data
+  is a temporary <em>game room</em> created during live two-player games, and
+  it deletes itself. You can still ask for it to be deleted immediately.
+</div>
+
+<h3>Data on the phone</h3>
+<p>Child's first name, session results, badges and level, chosen program, a
+hashed parent PIN and an optional parent email. Delete it yourself, instantly:
+<em>Parent Panel → Danger Zone → Delete history</em> (or <em>Delete all
+data</em>); or Android <em>Settings → Apps → Zihin Kampı → Storage → Clear
+data</em>; or uninstall the app. This data never leaves the device, so we hold
+no copy and no request is needed.</p>
+
+<h3>Data on the server</h3>
+<p>Only while a parent has turned live play on: a 5-digit random room code,
+moves, times, scores and timestamps. No name, age, location, device ID or
+account data. The room is deleted when the host leaves, and abandoned rooms
+are deleted monthly — nothing is kept longer than 90 days.</p>
+
+<h3>Requesting immediate deletion</h3>
+<p>Email <a href="mailto:onurgsahin@gmail.com?subject=Data%20deletion%20request">onurgsahin@gmail.com</a>
+with the subject <strong>Data deletion request</strong>, the <strong>room
+code</strong> shown on the game screen, and the approximate date and time of
+the game. The room is deleted within 30 days (usually within a few days) and
+we reply to confirm. Because rooms are not linked to any person, the room code
+is the only way to identify one — this is intentional, for privacy.</p>
+
+<h3>Account deletion</h3>
+<p>The app creates no accounts (no username, password, email sign-up, phone
+verification or third-party sign-in), so there is no account to delete.</p>
+
+<h3>Contact</h3>
+<p><a href="mailto:onurgsahin@gmail.com">onurgsahin@gmail.com</a> ·
+<a href="./">Privacy Policy</a></p>
+</div>
+
+<footer>
+  Zihin Kampı · 4'ten 5'e Köprü — Dr. Onur Şahin<br>
+  Son güncelleme: 20 Eylül 2026
+</footer>
+
+</div>
+</body>
+</html>
