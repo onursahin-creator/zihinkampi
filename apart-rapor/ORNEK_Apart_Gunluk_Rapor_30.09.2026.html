@@ -1,6 +1,5 @@
 <!doctype html>
-<html lang="tr">
-<head>
+<html lang="tr"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Apart Günlük Rapor</title>
@@ -50,7 +49,7 @@ td .btn{padding:4px 9px;font-size:12px;margin-right:3px}
 <body>
 <header>
   <h1>Apart Günlük Rapor</h1>
-  <label>Rapor tarihi <input type="date" id="rdate" required></label>
+  <label>Rapor tarihi <input type="date" id="rdate" required=""></label>
 </header>
 <nav id="tabs">
   <button data-t="rapor" class="on">📄 Rapor</button>
@@ -71,9 +70,9 @@ td .btn{padding:4px 9px;font-size:12px;margin-right:3px}
   </div>
   <div id="sumline" class="small noprint"></div>
   <div id="result"></div>
-  <div class="row noprint" id="actions" hidden>
+  <div class="row noprint" id="actions" hidden="">
     <button class="btn" id="dl">⬇ PNG olarak indir</button>
-    <button class="btn" id="share" hidden>📤 Paylaş (WhatsApp vb.)</button>
+    <button class="btn" id="share" hidden="">📤 Paylaş (WhatsApp vb.)</button>
     <button class="btn sec" id="prn">🖨 Yazdır / PDF</button>
   </div>
 </section>
@@ -93,7 +92,7 @@ td .btn{padding:4px 9px;font-size:12px;margin-right:3px}
   </div>
   <div class="row small" id="k-quick">Hızlı gece: <button class="btn sec" data-n="1">1</button><button class="btn sec" data-n="2">2</button><button class="btn sec" data-n="3">3</button><button class="btn sec" data-n="7">7</button><button class="btn sec" data-n="30">30</button></div>
   <div id="k-msg"></div>
-  <div class="row"><button class="btn" id="k-save">Kaydet</button><button class="btn sec" id="k-cancel" hidden>Vazgeç</button></div>
+  <div class="row"><button class="btn" id="k-save">Kaydet</button><button class="btn sec" id="k-cancel" hidden="">Vazgeç</button></div>
   <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
   <div class="row">
     <h2 style="margin:0">Kayıtlar</h2>
@@ -114,7 +113,7 @@ td .btn{padding:4px 9px;font-size:12px;margin-right:3px}
     <div class="f" style="grid-column:span 2"><label>Açıklama (isteğe bağlı)</label><input id="o-acik"></div>
   </div>
   <div id="o-msg"></div>
-  <div class="row"><button class="btn" id="o-save">Kaydet</button><button class="btn sec" id="o-cancel" hidden>Vazgeç</button></div>
+  <div class="row"><button class="btn" id="o-save">Kaydet</button><button class="btn sec" id="o-cancel" hidden="">Vazgeç</button></div>
   <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
   <div class="row"><h2 style="margin:0">Rapor tarihindeki ödemeler</h2>
   <select id="o-filter" class="btn sec"><option value="day">Sadece rapor tarihi</option><option value="all">Tümü</option></select></div>
@@ -139,7 +138,7 @@ td .btn{padding:4px 9px;font-size:12px;margin-right:3px}
   <p class="small">Veriler bu cihazın tarayıcısında saklanır. Düzenli olarak yedek alın; başka bilgisayara taşımak için yedeği içe aktarın.</p>
   <div class="row">
     <button class="btn sec" id="b-exp">⬇ Yedek al (JSON)</button>
-    <label class="btn sec" style="cursor:pointer">⬆ Yedeği yükle<input type="file" id="b-imp" accept=".json,application/json" hidden></label>
+    <label class="btn sec" style="cursor:pointer">⬆ Yedeği yükle<input type="file" id="b-imp" accept=".json,application/json" hidden=""></label>
     <button class="btn sec" id="b-demo">Örnek veriyi yükle (30.09.2026)</button>
     <button class="btn red" id="b-clear">Tüm verileri sil</button>
   </div>
@@ -148,7 +147,7 @@ td .btn{padding:4px 9px;font-size:12px;margin-right:3px}
 
 <dialog id="nd"><div id="nd-body"></div>
   <div class="row"><button class="btn sec" id="nd-save">💾 Bugünün dosyasını kaydet</button><button class="btn" id="nd-go">✅ Yeni güne geç</button><button class="btn sec" id="nd-x">Vazgeç</button></div></dialog>
-<script id="seed" type="application/json">null</script>
+<script id="seed" type="application/json">{"id":"7iq2j3iq0mxcr6qb","savedAt":1790884422991,"data":{"stays":[{"id":"vsmpo3ju","oda":18,"ad":"MUHAMMET SEMİH KÖSE","kisi":4,"giris":"2026-09-13","cikis":"2027-06-25","durum":"Geldi","tutar":498192,"kaynak":"ÖĞRENCİ"},{"id":"yu0mrz0h","oda":20,"ad":"MEHMET EFE ÇELEBİ","kisi":4,"giris":"2026-09-21","cikis":"2027-06-15","durum":"Geldi","tutar":471522,"kaynak":"ÖĞRENCİ"},{"id":"wkr3mv6l","oda":22,"ad":"HAYAL YAVAŞ","kisi":4,"giris":"2026-09-16","cikis":"2027-06-15","durum":"Geldi","tutar":480352,"kaynak":"ÖĞRENCİ"},{"id":"tog14nkh","oda":24,"ad":"BEREN TEZSEZENER","kisi":2,"giris":"2026-09-12","cikis":"2027-06-15","durum":"Geldi","tutar":482298,"kaynak":"ÖĞRENCİ"},{"id":"tsuyt6x3","oda":26,"ad":"HİLAL KIVRAK","kisi":2,"giris":"2026-09-04","cikis":"2027-06-15","durum":"Geldi","tutar":496450,"kaynak":"ÖĞRENCİ"},{"id":"fuec96pw","oda":29,"ad":"EDA NUR RUŞİTLER","kisi":2,"giris":"2026-09-13","cikis":"2027-06-15","durum":"Geldi","tutar":480532,"kaynak":"ÖĞRENCİ"},{"id":"t5e8eyf3","oda":13,"ad":"ZAKARIA EL KHATABI","kisi":3,"giris":"2026-09-25","cikis":"2026-10-01","durum":"Geldi","tutar":30600,"kaynak":"MÜNFERİT"},{"id":"tyohf5h3","oda":16,"ad":"SALİH ARABAYAPAN","kisi":5,"giris":"2026-09-27","cikis":"2026-10-04","durum":"Geldi","tutar":37999.99,"kaynak":"MÜNFERİT"},{"id":"x59pmies","oda":31,"ad":"MEHMET EMIN DINC","kisi":4,"giris":"2026-09-26","cikis":"2026-10-03","durum":"Geldi","tutar":37087,"kaynak":"ODAMAX"},{"id":"9hj8xg9h","oda":8,"ad":"KÜBRA TOPRAK KOLCU","kisi":4,"giris":"2026-09-30","cikis":"2026-10-01","durum":"Geldi","tutar":4337,"kaynak":"JOLLYTUR"},{"id":"2m2zvb54","oda":14,"ad":"BATI BAKKALOĞLU","kisi":5,"giris":"2026-09-30","cikis":"2026-10-04","durum":"Geldi","tutar":20000,"kaynak":"MÜNFERİT"},{"id":"id1mflwa","oda":25,"ad":"MEHMET YENER","kisi":4,"giris":"2026-09-30","cikis":"2026-10-04","durum":"Bekleniyor","tutar":2000,"kaynak":"COMP-MARATON"},{"id":"5od52iy5","oda":28,"ad":"ÇERKEZ BİLİR","kisi":2,"giris":"2026-09-30","cikis":"2026-10-04","durum":"Bekleniyor","tutar":2000,"kaynak":"COMP-MARATON"},{"id":"hoaxo6f9","oda":6,"ad":"ÖRNEK GİDEN MİSAFİR 06","kisi":3,"giris":"2026-09-27","cikis":"2026-09-30","durum":"Geldi","tutar":0,"kaynak":"MÜNFERİT"},{"id":"ye1it2py","oda":7,"ad":"ÖRNEK GİDEN MİSAFİR 07","kisi":3,"giris":"2026-09-27","cikis":"2026-09-30","durum":"Geldi","tutar":0,"kaynak":"MÜNFERİT"},{"id":"u65aiyl7","oda":8,"ad":"ÖRNEK GİDEN MİSAFİR 08","kisi":4,"giris":"2026-09-27","cikis":"2026-09-30","durum":"Geldi","tutar":0,"kaynak":"MÜNFERİT"}],"pays":[{"id":"dghiaa6a","tarih":"2026-09-30","oda":14,"yapan":"BATI BAKKALOĞLU","tutar":10000,"tur":"KK","acik":""}],"kirli":{"2026-09-30":[6]},"date":"2026-09-30","format":"yeni","lastKaynak":"","set":{"oda1":3,"oda2":32,"maxKisi":6,"kaynaklar":["ÖĞRENCİ","MÜNFERİT","ODAMAX","JOLLYTUR","COMP-MARATON"],"turler":["NAKİT","KK","HAVALE/EFT"]},"chain":"7iq2j3iq0mxcr6qb"}}</script>
 <script>
 'use strict';
 const ORIGINAL = '<!doctype html>\n' + document.documentElement.outerHTML;  // gün dosyası kaydı için ham sayfa
@@ -788,6 +787,4 @@ function render() {
 }
 function init() { fillSelects(); renderAyar(); resetStayForm(); resetPayForm(); invalidate(); render(); }
 init();
-</script>
-</body>
-</html>
+</script></body></html>

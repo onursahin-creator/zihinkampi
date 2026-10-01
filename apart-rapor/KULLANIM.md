@@ -58,3 +58,12 @@ ve hata varken rapor oluşturulmaz. Veriler tarayıcıda saklanır; Ayarlar'dan 
 - Kaynak, en son kullanılan değerle önceden seçili gelir. İsimler otomatik BÜYÜK HARF yapılır.
 - Rapor sekmesinde bugün gelecek misafirler için tek dokunuşla **Geldi / İptal**.
 - Boş odalardan kirli olanlar dokunarak işaretlenir; bugün çıkış yapan odalar otomatik kirli işaretlenir, temizlenenler dokunup kaldırılır.
+
+### Günlük kullanım (dosya mantığı)
+- `ORNEK_Apart_Gunluk_Rapor_30.09.2026.html`: 30.09.2026 verileri girili hazır dosya. Çift tıklayıp tarayıcıda açın.
+- Her gün **son kaydedilen dosyayı** açın. Yeni güne geçince **📅 Yeni güne geç** butonuna basın:
+  1. Hata veya "Geldi/İptal" bekleyen misafir varsa sistem geçişe izin vermez; ekrandan tek dokunuşla çözülür.
+  2. Dünkü tüm konaklamalar yeni güne devreder, çıkış yapanlar kayıttan düşer ve kirli boş oda işaretlenir.
+  3. Resepsiyon yalnızca değişiklikleri girer: gelenler (Geldi), yeni misafirler, uzama/iptal, ödemeler.
+- Gün sonunda **📄 Rapor Oluştur** ile görseli alın, ardından **💾 Günün dosyasını kaydet** ile `Apart_Gunluk_Rapor_gg.aa.yyyy.html` dosyasını indirin. Ertesi gün bu dosya açılır.
+- Veri hem dosyanın içinde hem tarayıcıda saklanır; aynı bilgisayarda dosya yeniden açılırsa tarayıcıdaki daha yeni kayıt kullanılır. Farklı bilgisayara geçerken son günün dosyasını taşıyın. Eski günlerin dosyalarını arşiv olarak saklayın.
