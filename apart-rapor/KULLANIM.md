@@ -49,8 +49,11 @@ Tarayıcıda açın (bilgisayar/telefon), verileri girin, **📄 Rapor Oluştur*
 ve hata varken rapor oluşturulmaz. Veriler tarayıcıda saklanır; Ayarlar'dan JSON yedeği alın. "Örnek veriyi yükle" ile 30.09.2026 örneği denenebilir.
 
 ### İki rapor formatı
-- **Geliştirilmiş (varsayılan):** doluluk %, gün başı/gelen/gelecek/giden/gün sonu/boş kutuları, renkli oda haritası, isimli hareket listeleri, konuk tablosu, ödemeler ve tahsilat toplamı, yarın özeti. Telefonda okunacak dikey formattır.
+- **Geliştirilmiş (varsayılan):** doluluk %, gün başı/gelen/gelecek/giden/gün sonu/boş kutuları, isimli hareket listeleri, konuk tablosu, ödemeler ve tahsilat toplamı, yarın özeti. Telefonda okunacak dikey formattır.
 - **Klasik:** mevcut Excel raporunuzun birebir görünümü. Rapor sekmesindeki "Format" menüsünden seçilir.
+
+- **Oda haritası** (renkli oda rack'i) varsayılan olarak **kapalı** gelir; Rapor sekmesindeki **🗺 Oda haritası** butonuyla açılıp kapatılır (görsel hazırsa anında yenilenir).
+- **Gelmedi / İptal:** gelmesi beklenen misafir gelmezse "Gelmedi / İptal" yapılır; misafir rapordan düşer ve gelmesi gereken günün ertesi günü de dahil olmak üzere raporda kırmızı **GELMEDİ / İPTAL** satırında görünür (ör. 25 numaralı oda).
 
 ### Resepsiyon için kolaylıklar
 - Yeni misafir formunda giriş tarihi rapor tarihi gelir; **gece sayısı** (veya 1/2/3/7/30 hızlı butonları) yazılınca çıkış tarihi otomatik hesaplanır.

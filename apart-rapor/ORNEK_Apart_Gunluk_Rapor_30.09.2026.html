@@ -66,6 +66,7 @@ td .btn{padding:4px 9px;font-size:12px;margin-right:3px}
     <button class="btn big" id="gen">📄 Rapor Oluştur</button>
     <button class="btn" id="nextday">📅 Yeni güne geç</button>
     <button class="btn sec" id="savefile">💾 Günün dosyasını kaydet</button>
+    <button class="btn sec" id="mapbtn">🗺 Oda haritası: Kapalı</button>
     <label class="small">Format <select id="fmt" class="btn sec"><option value="yeni">Geliştirilmiş</option><option value="klasik">Klasik (mevcut)</option></select></label>
   </div>
   <div id="sumline" class="small noprint"></div>
@@ -147,7 +148,7 @@ td .btn{padding:4px 9px;font-size:12px;margin-right:3px}
 
 <dialog id="nd"><div id="nd-body"></div>
   <div class="row"><button class="btn sec" id="nd-save">💾 Bugünün dosyasını kaydet</button><button class="btn" id="nd-go">✅ Yeni güne geç</button><button class="btn sec" id="nd-x">Vazgeç</button></div></dialog>
-<script id="seed" type="application/json">{"id":"ymss8pfujxcslfi4","savedAt":1790884568735,"data":{"stays":[{"id":"j5alcr8s","oda":18,"ad":"MUHAMMET SEMİH KÖSE","kisi":4,"giris":"2026-09-13","cikis":"2027-06-25","durum":"Geldi","tutar":498192,"kaynak":"ÖĞRENCİ"},{"id":"p5t9b8co","oda":20,"ad":"MEHMET EFE ÇELEBİ","kisi":4,"giris":"2026-09-21","cikis":"2027-06-15","durum":"Geldi","tutar":471522,"kaynak":"ÖĞRENCİ"},{"id":"za66so74","oda":22,"ad":"HAYAL YAVAŞ","kisi":4,"giris":"2026-09-16","cikis":"2027-06-15","durum":"Geldi","tutar":480352,"kaynak":"ÖĞRENCİ"},{"id":"1mlf3p72","oda":24,"ad":"BEREN TEZSEZENER","kisi":2,"giris":"2026-09-12","cikis":"2027-06-15","durum":"Geldi","tutar":482298,"kaynak":"ÖĞRENCİ"},{"id":"kq8thff6","oda":26,"ad":"HİLAL KIVRAK","kisi":2,"giris":"2026-09-04","cikis":"2027-06-15","durum":"Geldi","tutar":496450,"kaynak":"ÖĞRENCİ"},{"id":"3h59126b","oda":29,"ad":"EDA NUR RUŞİTLER","kisi":2,"giris":"2026-09-13","cikis":"2027-06-15","durum":"Geldi","tutar":480532,"kaynak":"ÖĞRENCİ"},{"id":"6cfk8i7h","oda":13,"ad":"ZAKARIA EL KHATABI","kisi":3,"giris":"2026-09-25","cikis":"2026-10-01","durum":"Geldi","tutar":30600,"kaynak":"MÜNFERİT"},{"id":"k6odclco","oda":16,"ad":"SALİH ARABAYAPAN","kisi":5,"giris":"2026-09-27","cikis":"2026-10-04","durum":"Geldi","tutar":37999.99,"kaynak":"MÜNFERİT"},{"id":"4sgnzsr4","oda":31,"ad":"MEHMET EMIN DINC","kisi":4,"giris":"2026-09-26","cikis":"2026-10-03","durum":"Geldi","tutar":37087,"kaynak":"ODAMAX"},{"id":"csr3acvt","oda":8,"ad":"KÜBRA TOPRAK KOLCU","kisi":4,"giris":"2026-09-30","cikis":"2026-10-01","durum":"Geldi","tutar":4337,"kaynak":"JOLLYTUR"},{"id":"4p6zzh45","oda":14,"ad":"BATI BAKKALOĞLU","kisi":5,"giris":"2026-09-30","cikis":"2026-10-04","durum":"Geldi","tutar":20000,"kaynak":"MÜNFERİT"},{"id":"c47wvat9","oda":25,"ad":"MEHMET YENER","kisi":4,"giris":"2026-09-30","cikis":"2026-10-04","durum":"Bekleniyor","tutar":2000,"kaynak":"COMP-MARATON"},{"id":"jfmjv0xx","oda":28,"ad":"ÇERKEZ BİLİR","kisi":2,"giris":"2026-09-30","cikis":"2026-10-04","durum":"Bekleniyor","tutar":2000,"kaynak":"COMP-MARATON"},{"id":"xreq15ri","oda":6,"ad":"ÖRNEK GİDEN MİSAFİR 06","kisi":3,"giris":"2026-09-27","cikis":"2026-09-30","durum":"Geldi","tutar":0,"kaynak":"MÜNFERİT"},{"id":"v0kl96nl","oda":7,"ad":"ÖRNEK GİDEN MİSAFİR 07","kisi":3,"giris":"2026-09-27","cikis":"2026-09-30","durum":"Geldi","tutar":0,"kaynak":"MÜNFERİT"},{"id":"a4uwehf2","oda":8,"ad":"ÖRNEK GİDEN MİSAFİR 08","kisi":4,"giris":"2026-09-27","cikis":"2026-09-30","durum":"Geldi","tutar":0,"kaynak":"MÜNFERİT"}],"pays":[{"id":"mqpfkg4a","tarih":"2026-09-30","oda":14,"yapan":"BATI BAKKALOĞLU","tutar":10000,"tur":"KK","acik":""}],"kirli":{"2026-09-30":[6]},"kirliOk":{"2026-09-30":true},"date":"2026-09-30","format":"yeni","lastKaynak":"","set":{"oda1":3,"oda2":32,"maxKisi":6,"kaynaklar":["ÖĞRENCİ","MÜNFERİT","ODAMAX","JOLLYTUR","COMP-MARATON"],"turler":["NAKİT","KK","HAVALE/EFT"]},"chain":"ymss8pfujxcslfi4"}}</script>
+<script id="seed" type="application/json">{"id":"1gxwvk150uhp6fyd","savedAt":1790884682530,"data":{"stays":[{"id":"vnquc05c","oda":18,"ad":"MUHAMMET SEMİH KÖSE","kisi":4,"giris":"2026-09-13","cikis":"2027-06-25","durum":"Geldi","tutar":498192,"kaynak":"ÖĞRENCİ"},{"id":"6p3r9pll","oda":20,"ad":"MEHMET EFE ÇELEBİ","kisi":4,"giris":"2026-09-21","cikis":"2027-06-15","durum":"Geldi","tutar":471522,"kaynak":"ÖĞRENCİ"},{"id":"lewxxpde","oda":22,"ad":"HAYAL YAVAŞ","kisi":4,"giris":"2026-09-16","cikis":"2027-06-15","durum":"Geldi","tutar":480352,"kaynak":"ÖĞRENCİ"},{"id":"1t2t2m4b","oda":24,"ad":"BEREN TEZSEZENER","kisi":2,"giris":"2026-09-12","cikis":"2027-06-15","durum":"Geldi","tutar":482298,"kaynak":"ÖĞRENCİ"},{"id":"h4jdsp32","oda":26,"ad":"HİLAL KIVRAK","kisi":2,"giris":"2026-09-04","cikis":"2027-06-15","durum":"Geldi","tutar":496450,"kaynak":"ÖĞRENCİ"},{"id":"si2jdwiq","oda":29,"ad":"EDA NUR RUŞİTLER","kisi":2,"giris":"2026-09-13","cikis":"2027-06-15","durum":"Geldi","tutar":480532,"kaynak":"ÖĞRENCİ"},{"id":"jlnv4q4u","oda":13,"ad":"ZAKARIA EL KHATABI","kisi":3,"giris":"2026-09-25","cikis":"2026-10-01","durum":"Geldi","tutar":30600,"kaynak":"MÜNFERİT"},{"id":"i8cwrnsf","oda":16,"ad":"SALİH ARABAYAPAN","kisi":5,"giris":"2026-09-27","cikis":"2026-10-04","durum":"Geldi","tutar":37999.99,"kaynak":"MÜNFERİT"},{"id":"9whmcmhq","oda":31,"ad":"MEHMET EMIN DINC","kisi":4,"giris":"2026-09-26","cikis":"2026-10-03","durum":"Geldi","tutar":37087,"kaynak":"ODAMAX"},{"id":"jc0i1m2t","oda":8,"ad":"KÜBRA TOPRAK KOLCU","kisi":4,"giris":"2026-09-30","cikis":"2026-10-01","durum":"Geldi","tutar":4337,"kaynak":"JOLLYTUR"},{"id":"j2qjhaa1","oda":14,"ad":"BATI BAKKALOĞLU","kisi":5,"giris":"2026-09-30","cikis":"2026-10-04","durum":"Geldi","tutar":20000,"kaynak":"MÜNFERİT"},{"id":"oqf1vije","oda":25,"ad":"MEHMET YENER","kisi":4,"giris":"2026-09-30","cikis":"2026-10-04","durum":"Bekleniyor","tutar":2000,"kaynak":"COMP-MARATON"},{"id":"7q4mklrr","oda":28,"ad":"ÇERKEZ BİLİR","kisi":2,"giris":"2026-09-30","cikis":"2026-10-04","durum":"Bekleniyor","tutar":2000,"kaynak":"COMP-MARATON"},{"id":"x1h4dpjb","oda":6,"ad":"ÖRNEK GİDEN MİSAFİR 06","kisi":3,"giris":"2026-09-27","cikis":"2026-09-30","durum":"Geldi","tutar":0,"kaynak":"MÜNFERİT"},{"id":"1dut8qqu","oda":7,"ad":"ÖRNEK GİDEN MİSAFİR 07","kisi":3,"giris":"2026-09-27","cikis":"2026-09-30","durum":"Geldi","tutar":0,"kaynak":"MÜNFERİT"},{"id":"432rl22n","oda":8,"ad":"ÖRNEK GİDEN MİSAFİR 08","kisi":4,"giris":"2026-09-27","cikis":"2026-09-30","durum":"Geldi","tutar":0,"kaynak":"MÜNFERİT"}],"pays":[{"id":"p6noth90","tarih":"2026-09-30","oda":14,"yapan":"BATI BAKKALOĞLU","tutar":10000,"tur":"KK","acik":""}],"kirli":{"2026-09-30":[6]},"kirliOk":{"2026-09-30":true},"showMap":false,"date":"2026-09-30","format":"yeni","lastKaynak":"","set":{"oda1":3,"oda2":32,"maxKisi":6,"kaynaklar":["ÖĞRENCİ","MÜNFERİT","ODAMAX","JOLLYTUR","COMP-MARATON"],"turler":["NAKİT","KK","HAVALE/EFT"]},"chain":"1gxwvk150uhp6fyd"}}</script>
 <script>
 'use strict';
 const ORIGINAL = '<!doctype html>\n' + document.documentElement.outerHTML;  // gün dosyası kaydı için ham sayfa
@@ -167,7 +168,7 @@ const clean = s => (s || '').replace(/\s+/g, ' ').trim().toLocaleUpperCase('tr-T
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const defaults = () => ({
-  stays: [], pays: [], kirli: {}, kirliOk: {}, date: todayISO(), format: 'yeni', lastKaynak: '',
+  stays: [], pays: [], kirli: {}, kirliOk: {}, showMap: false, date: todayISO(), format: 'yeni', lastKaynak: '',
   set: { oda1: 3, oda2: 32, maxKisi: 6,
     kaynaklar: ['ÖĞRENCİ', 'MÜNFERİT', 'ODAMAX', 'JOLLYTUR', 'COMP-MARATON'],
     turler: ['NAKİT', 'KK', 'HAVALE/EFT'] }
@@ -248,6 +249,7 @@ function compute(date) {
   const occ = new Set(r.gunSonu.map(s => +s.oda));
   r.bos = rooms().filter(o => !occ.has(o));
   r.pays = S.pays.filter(p => p.tarih === date);
+  r.noshow = S.stays.filter(s => s.durum === 'İptal' && (dn(s.giris) === D || dn(s.giris) === D - 1));
   return r;
 }
 
@@ -413,6 +415,7 @@ function drawReportV2(date) {
     });
     y += 96 + G;
     // Oda haritası
+    if (S.showMap) {
     T('ODA DURUMU', M, y + 14, { size: 18, bold: true }); y += 30;
     const perRow = 10, tg = 8, th = 58, tw = (IW - tg * (perRow - 1)) / perRow;
     rooms().forEach((o, i) => {
@@ -428,13 +431,16 @@ function drawReportV2(date) {
       T(l2, x + tw / 2, yy + 45, { size: 14, color: '#475569', align: 'center' });
     });
     y += Math.ceil(total / perRow) * (th + tg);
+    }
     T(`${R.bos.length - kir.length} ODA BOŞ VE TEMİZ  //  ${kir.length} ODA BOŞ VE KİRLİ${kir.length ? '  (' + kir.map(room2).join('-') + ')' : ''}`, M, y + 12, { size: 17, bold: true, maxW: IW });
     y += 28;
+    if (S.showMap) {
     let lx = M;
     [['#bcdcf5', 'Uzun konaklama'], ['#e4e8ee', 'Konaklayan'], ['#cfe8bf', 'Bugün gelen'], ['#ffe9a6', 'Bekleniyor'], ['#fbd3b0', 'Boş-kirli'], ['#fff', 'Boş-temiz']].forEach(([f, t]) => {
       box(lx, y + 6, 16, 16, 4, f, '#9aa7b8'); c.font = `400 14px ${FONT}`; T(t, lx + 22, y + 14, { size: 14, color: '#475569' }); lx += 22 + c.measureText(t).width + 22;
     });
-    y += 30 + G;
+    y += 30; }
+    y += G;
     // Hareketler
     const MAXL = 8, bw = (IW - 24) / 3;
     const mv = [['BUGÜN GELEN', R.gelen, '#2e9e4f'], ['GELECEK (bekleniyor)', R.gelecek, '#c98a00'], ['BUGÜN GİDEN', R.giden, '#d9622b']];
@@ -448,6 +454,10 @@ function drawReportV2(date) {
       ls.forEach((l, j) => T(l, x + 14, y + 50 + j * 26, { size: 15, maxW: bw - 26 }));
     });
     y += 30 + mh + G;
+    if (R.noshow.length) {
+      const txt = 'GELMEDİ / İPTAL:  ' + R.noshow.slice().sort((p, q) => p.oda - q.oda).map(x => `${room2(x.oda)} ${x.ad} (${x.kisi} kişi, giriş ${fmt(x.giris)})`).join('   ·   ');
+      box(M, y, IW, 40, 10, '#fdecea', '#f1b5ad'); T(txt, M + 14, y + 20, { size: 15, bold: true, color: '#9b2c1d', maxW: IW - 28 }); y += 40 + G;
+    }
     // Konuk tablosu
     T('GÜN SONU KONUK LİSTESİ', M, y + 14, { size: 18, bold: true }); y += 30;
     const cw = [64, 262, 62, 118, 118, 62, 108, 118, 120], cx = [M]; cw.forEach(w => cx.push(cx[cx.length - 1] + w));
@@ -618,7 +628,7 @@ function renderKon() {
     .sort((a, b) => dn(b.giris) - dn(a.giris) || a.oda - b.oda);
   $('#k-list').innerHTML = list.map(s => `<tr class="${bad.has(s.id) ? 'bad' : s.durum === 'İptal' ? 'cancel' : s.durum === 'Bekleniyor' ? 'new' : ''}">
     <td>${esc(s.oda)}</td><td>${esc(s.ad)}</td><td>${s.kisi}</td><td>${fmt(s.giris)}</td><td>${fmt(s.cikis)}</td><td>${s.durum}</td><td>${TL(s.tutar)}</td><td>${esc(s.kaynak)}</td>
-    <td style="white-space:nowrap">${s.durum === 'Bekleniyor' ? `<button class="btn" data-a="geldi" data-id="${s.id}">Geldi</button><button class="btn sec" data-a="iptal" data-id="${s.id}">İptal</button>` : ''}
+    <td style="white-space:nowrap">${s.durum === 'Bekleniyor' ? `<button class="btn" data-a="geldi" data-id="${s.id}">Geldi</button><button class="btn sec" data-a="iptal" data-id="${s.id}">Gelmedi / İptal</button>` : ''}
     <button class="btn sec" data-a="edit" data-id="${s.id}">Düzenle</button><button class="btn red" data-a="del" data-id="${s.id}">Sil</button></td></tr>`).join('') || '<tr><td colspan="9" class="small">Kayıt yok</td></tr>';
 }
 function stayAct(b) {
@@ -655,7 +665,7 @@ $('#o-filter').onchange = renderOde;
 
 function renderQuick(R) {
   const li = (s, btns = '') => `<li><b>${room2(s.oda)}</b> · ${esc(s.ad)} · ${s.kisi} kişi ${btns}</li>`;
-  const bt = id => `<button class="btn" data-a="geldi" data-id="${id}">Geldi</button><button class="btn sec" data-a="iptal" data-id="${id}">İptal</button>`;
+  const bt = id => `<button class="btn" data-a="geldi" data-id="${id}">Geldi</button><button class="btn sec" data-a="iptal" data-id="${id}">Gelmedi / İptal</button>`;
   const ul = (a, f) => a.length ? `<ul>${a.map(f).join('')}</ul>` : '<div class="small">Yok</div>';
   $('#quick').innerHTML = `<div class="cards">
     <div class="card"><h3>Bugün gelecekler — bekleniyor (${R.gelecek.length})</h3>${ul(R.gelecek, s => li(s, bt(s.id)))}</div>
@@ -679,7 +689,7 @@ $('#kirliBox').onclick = e => {
 function renderRapor() {
   const errs = allErrors(), date = S.date;
   let html = '', ok = true;
-  $('#fmt').value = S.format;
+  $('#fmt').value = S.format; $('#mapbtn').textContent = `🗺 Oda haritası: ${S.showMap ? 'Açık' : 'Kapalı'}`; $('#mapbtn').hidden = S.format === 'klasik';
   if (!validISO(date)) { $('#status').innerHTML = '<div class="msg bad">Geçerli bir rapor tarihi seçin.</div>'; $('#gen').disabled = true; $('#quick').innerHTML = $('#kirliBox').innerHTML = ''; return; }
   if (errs.length) { ok = false; html += `<div class="msg bad"><b>⚠ ${errs.length} hata var — düzeltmeden rapor oluşturulamaz</b><ul>${errs.map(e => `<li>${esc(e)}</li>`).join('')}</ul></div>`; }
   const R = compute(date);
@@ -691,7 +701,8 @@ function renderRapor() {
   renderQuick(R); renderKirli(R);
   $('#status').innerHTML = html; $('#gen').disabled = !ok;
 }
-$('#fmt').onchange = () => { S.format = $('#fmt').value; save(); };
+$('#fmt').onchange = () => { S.format = $('#fmt').value; save(); renderRapor(); };
+$('#mapbtn').onclick = () => { const had = !!lastCanvas; S.showMap = !S.showMap; save(); renderRapor(); if (had && !$('#gen').disabled) $('#gen').click(); };
 function invalidate() { lastCanvas = null; $('#result').innerHTML = ''; $('#actions').hidden = true; }
 $('#gen').onclick = () => {
   if (allErrors().length) return;
@@ -762,7 +773,7 @@ function renderNextDay() {
   let h = `<h2>${fmt(S.date)} günü kapatılıyor → ${fmt(next)}</h2>`;
   if (errs.length) h += `<div class="msg bad"><b>Önce hataları düzeltin (${errs.length}):</b><ul>${errs.map(e => `<li>${esc(e)}</li>`).join('')}</ul></div>`;
   if (unres.length) h += `<div class="msg warn"><b>Gelmesi beklenen misafirleri sonuçlandırın:</b><ul style="list-style:none;padding:0">${unres.map(x => `<li style="margin:6px 0"><b>${room2(x.oda)}</b> · ${esc(x.ad)} · ${x.kisi} kişi
-    <button class="btn" data-a="geldi" data-id="${x.id}">Geldi</button> <button class="btn sec" data-a="iptal" data-id="${x.id}">İptal</button></li>`).join('')}</ul></div>`;
+    <button class="btn" data-a="geldi" data-id="${x.id}">Geldi</button> <button class="btn sec" data-a="iptal" data-id="${x.id}">Gelmedi / İptal</button></li>`).join('')}</ul></div>`;
   if (!errs.length && !unres.length) h += '<div class="msg ok">✔ Kontroller temiz.</div>';
   h += `<div class="card"><h3>Yeni güne devreden</h3><ul>
     <li>Konaklamaya devam eden: <b>${R.gunSonu.length} oda / ${R.k.gunSonu} kişi</b> (${rl(R.gunSonu)})</li>
