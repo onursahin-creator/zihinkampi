@@ -70,3 +70,13 @@ ve hata varken rapor oluşturulmaz. Veriler tarayıcıda saklanır; Ayarlar'dan 
   3. Resepsiyon yalnızca değişiklikleri girer: gelenler (Geldi), yeni misafirler, uzama/iptal, ödemeler.
 - Gün sonunda **📄 Rapor Oluştur** ile görseli alın, ardından **💾 Günün dosyasını kaydet** ile `Apart_Gunluk_Rapor_gg.aa.yyyy.html` dosyasını indirin. Ertesi gün bu dosya açılır.
 - Veri hem dosyanın içinde hem tarayıcıda saklanır; aynı bilgisayarda dosya yeniden açılırsa tarayıcıdaki daha yeni kayıt kullanılır. Farklı bilgisayara geçerken son günün dosyasını taşıyın. Eski günlerin dosyalarını arşiv olarak saklayın.
+
+### Kaynak, tutar ve ödeme kuralları (rapor.html)
+- **Kaynak listesi:** MÜNFERİT, COMP, AIRBNB, BOOKING, JOLLY, ODAMAX, TATİLBUDUR, SETUR, EXPEDIA, DİĞER. Yanındaki "Kaynak notu" alanı isteğe bağlıdır; **DİĞER** seçilirse yazılması zorunludur (raporda yalnızca not görünür, ör. ÖĞRENCİ). Diğer kaynaklarda not parantez içinde görünür (ör. COMP (MARATON)). Listeyi yönetici Ayarlar'dan değiştirebilir; COMP ve DİĞER listede kalmalıdır.
+- **Günlük tutar otomatik:** Toplam tutar yazılınca günlük tutar (toplam ÷ gece), günlük tutar yazılınca toplam (günlük × gece) hesaplanır. Gece sayısı değişirse hesap güncellenir.
+- **Doğrulama kutusu:** Kayıt geçerliyse "5.000 ₺ × 3 gece = 15.000 ₺" özeti çıkar; **"kontrol ettim, doğru"** kutusu işaretlenmeden Kaydet açılmaz. Formda herhangi bir alan değişirse kutu sıfırlanır. Düzenlemede yalnızca tutar/tarih/oda/kişi/kaynak değişirse istenir.
+- **Tutar kuralları:** Tutar 0 yalnızca COMP veya DİĞER için kabul edilir. Günlük tutar Ayarlar'daki olağan aralığın (varsayılan 250–20.000 ₺) dışındaysa uyarı çıkar ve onay metni "olağan dışı tutarı kontrol ettim" olur; Rapor sekmesinde de sarı uyarı olarak listelenir (raporu engellemez).
+- **Ödemeler konaklamaya bağlıdır:** Oda ve tarih seçilince misafir otomatik gelir (aynı odada iki misafir varsa listeden seçilir), kalan bakiye gösterilir. **Kalan bakiyeyi aşan ödeme kaydedilmez.** Konaklama listesinde Günlük ve Kalan sütunları vardır. Konaklama silinirse bağlı ödemeler de silinir (onay sorulur).
+- **Kaydedilmemiş değişiklik uyarısı:** Dosyaya kaydedilmemiş değişiklik varken Rapor sekmesinde sarı uyarı çıkar, sekme kapatılırsa tarayıcı uyarır.
+- Eski kayıtlar açılırken otomatik taşınır: ÖĞRENCİ → DİĞER (ÖĞRENCİ), JOLLYTUR → JOLLY, COMP-MARATON → COMP (MARATON); listede olmayan eski kaynaklar DİĞER'e not olarak aktarılır.
+- Not: `Apart_Gunluk_Rapor_SABLON.xlsx` Excel dosyası bu güncellemeleri içermez; güncel iş akışı `rapor.html`'dir.
