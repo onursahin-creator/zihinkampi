@@ -57,7 +57,7 @@ ve hata varken rapor oluşturulmaz. Veriler tarayıcıda saklanır; Ayarlar'dan 
 - Seçilen tarihlerde dolu olan odalar listede "— dolu" görünür ve seçilemez.
 - Kaynak, en son kullanılan değerle önceden seçili gelir. İsimler otomatik BÜYÜK HARF yapılır.
 - Rapor sekmesinde bugün gelecek misafirler için tek dokunuşla **Geldi / İptal**.
-- Boş odalardan kirli olanlar dokunarak işaretlenir; bugün çıkış yapan odalar otomatik kirli işaretlenir, temizlenenler dokunup kaldırılır.
+- Boş odalardan kirli olanlar dokunarak işaretlenir; bugün çıkış yapan odalar kirli işaretli gelir, temizlenenler dokunup kaldırılır. Rapor oluşturmadan önce **Onayla** düğmesine basmak zorunludur (varsayılan yanlış olabileceği için sessizce kabul edilmez).
 
 ### Günlük kullanım (dosya mantığı)
 - `ORNEK_Apart_Gunluk_Rapor_30.09.2026.html`: 30.09.2026 verileri girili hazır dosya. Çift tıklayıp tarayıcıda açın.
