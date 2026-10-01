@@ -41,3 +41,9 @@ Girişte engellenemeyen durumlar (yapıştırma, sonradan tarih değiştirme) i�
 - Sayfalar parolasız korumalıdır (formüller yanlışlıkla silinmesin diye). Yönetici: Gözden Geçir → Sayfa Korumasını Kaldır.
 - Kapasite: 1000 konaklama, 500 ödeme satırı; raporda günlük en fazla 20 ödeme satırı yer alır (aşılırsa uyarı verir).
 - Odalar 03–32 (30 oda) kabul edildi (orijinaldeki `30 − Gün Sonu` ve boş oda listesine göre).
+
+## Görsel rapor uygulaması (`rapor.html`)
+Excel'de makro olmadan "Rapor Oluştur" butonu yapılamadığı için aynı mantığın web uygulaması da eklendi.
+Tarayıcıda açın (bilgisayar/telefon), verileri girin, **📄 Rapor Oluştur** ile boş satırsız, tek parça PNG rapor görseli alın;
+**PNG indir**, **Paylaş** (WhatsApp vb.) veya **Yazdır/PDF** ile gönderin. Doğrulama kuralları Excel'dekiyle aynıdır
+ve hata varken rapor oluşturulmaz. Veriler tarayıcıda saklanır; Ayarlar'dan JSON yedeği alın. "Örnek veriyi yükle" ile 30.09.2026 örneği denenebilir.

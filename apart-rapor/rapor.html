@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Apart Günlük Rapor</title>
+<style>
+:root{--bg:#f3f5f9;--card:#fff;--ink:#1b2430;--mut:#667085;--line:#d5dbe5;--pri:#1f3864;--ok:#1d7a3a;--okbg:#e3f4e8;--bad:#b42318;--badbg:#fde8e6;--warn:#b54708;--warnbg:#fff1dd}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:15px}
+header{background:var(--pri);color:#fff;padding:10px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;position:sticky;top:0;z-index:5}
+header h1{font-size:17px;margin:0;flex:1 1 auto}
+header label{font-size:13px;display:flex;gap:8px;align-items:center}
+header input{font-size:15px;padding:5px 8px;border-radius:6px;border:0}
+nav{display:flex;gap:4px;padding:8px 12px 0;overflow-x:auto;background:var(--bg)}
+nav button{border:0;background:#e3e8f1;padding:10px 16px;border-radius:8px 8px 0 0;font-size:15px;cursor:pointer;color:var(--ink);white-space:nowrap}
+nav button.on{background:var(--card);font-weight:700;color:var(--pri)}
+main{background:var(--card);margin:0 12px 24px;padding:16px;border-radius:0 8px 8px 8px;box-shadow:0 1px 3px #0002;max-width:1180px}
+@media(min-width:1210px){main{margin:0 auto 24px}nav{max-width:1180px;margin:0 auto}}
+.pane{display:none}.pane.on{display:block}
+h2{font-size:16px;margin:0 0 12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:10px}
+.f label{display:block;font-size:12px;color:var(--mut);margin-bottom:3px}
+.f input,.f select,.f textarea{width:100%;font:inherit;padding:8px;border:1px solid var(--line);border-radius:6px;background:#fffdf3}
+.f input:invalid{border-color:var(--bad)}
+.btn{font:inherit;border:0;border-radius:8px;padding:10px 16px;cursor:pointer;background:var(--pri);color:#fff}
+.btn.sec{background:#e3e8f1;color:var(--ink)}.btn.red{background:var(--bad)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.big{font-size:18px;padding:14px 26px;background:var(--ok)}
+.msg{padding:9px 12px;border-radius:8px;margin:8px 0;font-size:14px}
+.msg.ok{background:var(--okbg);color:var(--ok)}.msg.bad{background:var(--badbg);color:var(--bad)}.msg.warn{background:var(--warnbg);color:var(--warn)}
+.msg ul{margin:4px 0 0 18px;padding:0}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{background:var(--pri);color:#fff;padding:7px;text-align:left;white-space:nowrap}
+td{border-bottom:1px solid var(--line);padding:6px 7px}
+tr.new td{background:#eaf5e1}tr.cancel td{color:#999;text-decoration:line-through}tr.bad td{background:var(--badbg)}
+.tw{overflow-x:auto}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0}
+.small{font-size:12px;color:var(--mut)}
+td .btn{padding:4px 9px;font-size:12px;margin-right:3px}
+#result img{max-width:100%;border:1px solid var(--line);margin-top:12px;background:#fff}
+@media print{header,nav,.noprint,.pane:not(#p-rapor) {display:none!important}main{box-shadow:none;margin:0;padding:0}#p-rapor>*:not(#result){display:none!important}#result img{border:0;width:100%}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Apart Günlük Rapor</h1>
+  <label>Rapor tarihi <input type="date" id="rdate" required></label>
+</header>
+<nav id="tabs">
+  <button data-t="rapor" class="on">📄 Rapor</button>
+  <button data-t="kon">🛏 Konaklama</button>
+  <button data-t="ode">💳 Ödemeler</button>
+  <button data-t="ayar">⚙ Ayarlar</button>
+</nav>
+<main>
+<section class="pane on" id="p-rapor">
+  <div id="status"></div>
+  <div class="row noprint">
+    <div class="f" style="max-width:260px"><label for="kirli">Kirli boş oda sayısı (yoksa 0)</label><input id="kirli" type="number" min="0" step="1" inputmode="numeric"></div>
+    <div id="sumline" class="small"></div>
+  </div>
+  <div class="row noprint"><button class="btn big" id="gen">📄 Rapor Oluştur</button></div>
+  <div id="result"></div>
+  <div class="row noprint" id="actions" hidden>
+    <button class="btn" id="dl">⬇ PNG olarak indir</button>
+    <button class="btn" id="share" hidden>📤 Paylaş (WhatsApp vb.)</button>
+    <button class="btn sec" id="prn">🖨 Yazdır / PDF</button>
+  </div>
+</section>
+
+<section class="pane" id="p-kon">
+  <h2 id="kon-title">Yeni konaklama</h2>
+  <div class="grid">
+    <div class="f"><label>Oda No</label><select id="k-oda"></select></div>
+    <div class="f" style="grid-column:span 2"><label>Misafir adı</label><input id="k-ad" autocomplete="off"></div>
+    <div class="f"><label>Kişi sayısı</label><input id="k-kisi" type="number" min="1" step="1" inputmode="numeric"></div>
+    <div class="f"><label>Giriş tarihi</label><input id="k-giris" type="date"></div>
+    <div class="f"><label>Çıkış tarihi</label><input id="k-cikis" type="date"></div>
+    <div class="f"><label>Giriş durumu</label><select id="k-durum"><option>Geldi</option><option>Bekleniyor</option><option>İptal</option></select></div>
+    <div class="f"><label>Toplam tutar (₺)</label><input id="k-tutar" type="number" min="0" step="0.01" inputmode="decimal"></div>
+    <div class="f"><label>Açıklama / kaynak</label><select id="k-kaynak"></select></div>
+  </div>
+  <div id="k-msg"></div>
+  <div class="row"><button class="btn" id="k-save">Kaydet</button><button class="btn sec" id="k-cancel" hidden>Vazgeç</button></div>
+  <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+  <div class="row">
+    <h2 style="margin:0">Kayıtlar</h2>
+    <select id="k-filter" class="btn sec"><option value="act">Rapor tarihinde aktif / gelecek</option><option value="all">Tümü</option></select>
+    <input id="k-search" placeholder="Ara (isim / oda)" style="padding:8px;border:1px solid var(--line);border-radius:6px">
+  </div>
+  <div class="tw"><table><thead><tr><th>Oda</th><th>İsim</th><th>Kişi</th><th>Giriş</th><th>Çıkış</th><th>Durum</th><th>Tutar</th><th>Kaynak</th><th></th></tr></thead><tbody id="k-list"></tbody></table></div>
+</section>
+
+<section class="pane" id="p-ode">
+  <h2 id="o-title">Yeni ödeme</h2>
+  <div class="grid">
+    <div class="f"><label>Tarih</label><input id="o-tarih" type="date"></div>
+    <div class="f"><label>Oda No</label><select id="o-oda"></select></div>
+    <div class="f" style="grid-column:span 2"><label>Ödemeyi yapan</label><input id="o-yapan" autocomplete="off"></div>
+    <div class="f"><label>Tutar (₺)</label><input id="o-tutar" type="number" min="0.01" step="0.01" inputmode="decimal"></div>
+    <div class="f"><label>Ödeme türü</label><select id="o-tur"></select></div>
+    <div class="f" style="grid-column:span 2"><label>Açıklama (isteğe bağlı)</label><input id="o-acik"></div>
+  </div>
+  <div id="o-msg"></div>
+  <div class="row"><button class="btn" id="o-save">Kaydet</button><button class="btn sec" id="o-cancel" hidden>Vazgeç</button></div>
+  <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+  <div class="row"><h2 style="margin:0">Rapor tarihindeki ödemeler</h2>
+  <select id="o-filter" class="btn sec"><option value="day">Sadece rapor tarihi</option><option value="all">Tümü</option></select></div>
+  <div class="tw"><table><thead><tr><th>Tarih</th><th>Oda</th><th>Ödemeyi yapan</th><th>Tutar</th><th>Tür</th><th>Açıklama</th><th></th></tr></thead><tbody id="o-list"></tbody></table></div>
+</section>
+
+<section class="pane" id="p-ayar">
+  <h2>Ayarlar</h2>
+  <div class="grid">
+    <div class="f"><label>İlk oda no</label><input id="a-o1" type="number" min="1" step="1"></div>
+    <div class="f"><label>Son oda no</label><input id="a-o2" type="number" min="1" step="1"></div>
+    <div class="f"><label>Odada azami kişi</label><input id="a-max" type="number" min="1" step="1"></div>
+  </div>
+  <div class="grid">
+    <div class="f"><label>Açıklama / kaynak listesi (her satıra bir tane)</label><textarea id="a-kay" rows="7"></textarea></div>
+    <div class="f"><label>Ödeme türleri (her satıra bir tane)</label><textarea id="a-tur" rows="7"></textarea></div>
+  </div>
+  <div id="a-msg"></div>
+  <div class="row"><button class="btn" id="a-save">Ayarları kaydet</button></div>
+  <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+  <h2>Veri</h2>
+  <p class="small">Veriler bu cihazın tarayıcısında saklanır. Düzenli olarak yedek alın; başka bilgisayara taşımak için yedeği içe aktarın.</p>
+  <div class="row">
+    <button class="btn sec" id="b-exp">⬇ Yedek al (JSON)</button>
+    <label class="btn sec" style="cursor:pointer">⬆ Yedeği yükle<input type="file" id="b-imp" accept=".json,application/json" hidden></label>
+    <button class="btn sec" id="b-demo">Örnek veriyi yükle (30.09.2026)</button>
+    <button class="btn red" id="b-clear">Tüm verileri sil</button>
+  </div>
+</section>
+</main>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const LS = 'apartRapor.v1';
+const pad = n => String(n).padStart(2, '0');
+const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+const validISO = s => /^\d{4}-\d{2}-\d{2}$/.test(s || '') && !isNaN(Date.parse(s)) && +s.slice(0, 4) >= 2020 && +s.slice(0, 4) <= 2100;
+const dn = s => Math.round(Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10)) / 864e5);
+const fromDn = n => { const d = new Date(n * 864e5); return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`; };
+const fmt = s => s ? `${s.slice(8, 10)}.${s.slice(5, 7)}.${s.slice(0, 4)}` : '';
+const TL = n => '₺' + Number(n).toLocaleString('tr-TR', { maximumFractionDigits: 0 });
+const TL2 = n => Number(n).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₺';
+const room2 = n => pad(n);
+const uid = () => Math.random().toString(36).slice(2, 10);
+const clean = s => (s || '').replace(/\s+/g, ' ').trim().toLocaleUpperCase('tr-TR');
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+const defaults = () => ({
+  stays: [], pays: [], kirli: {}, date: todayISO(),
+  set: { oda1: 3, oda2: 32, maxKisi: 6,
+    kaynaklar: ['ÖĞRENCİ', 'MÜNFERİT', 'ODAMAX', 'JOLLYTUR', 'COMP-MARATON'],
+    turler: ['NAKİT', 'KK', 'HAVALE/EFT'] }
+});
+let S;
+try { S = Object.assign(defaults(), JSON.parse(localStorage.getItem(LS) || '{}')); } catch (e) { S = defaults(); }
+const save = () => { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) { alert('Veri kaydedilemedi: tarayıcı depolaması kapalı olabilir.'); } };
+const rooms = () => { const a = []; for (let i = S.set.oda1; i <= S.set.oda2; i++) a.push(i); return a; };
+
+/* ---------- Doğrulama ---------- */
+function checkStay(s, selfId) {
+  const miss = [['oda', 'oda no'], ['ad', 'misafir adı'], ['kisi', 'kişi sayısı'], ['giris', 'giriş tarihi'], ['cikis', 'çıkış tarihi'], ['durum', 'giriş durumu'], ['tutar', 'tutar'], ['kaynak', 'kaynak']]
+    .filter(([k]) => s[k] === '' || s[k] == null || (typeof s[k] === 'number' && isNaN(s[k]))).map(x => x[1]);
+  if (miss.length) return 'Eksik bilgi: ' + miss.join(', ');
+  if (!rooms().includes(+s.oda)) return `Geçersiz oda no (${S.set.oda1}–${S.set.oda2} arası olmalı)`;
+  if (s.ad !== clean(s.ad) || s.ad.length < 3) return 'İsim en az 3 harf olmalı, baş/son boşluk olmamalı';
+  if (!Number.isInteger(+s.kisi) || +s.kisi < 1 || +s.kisi > S.set.maxKisi) return `Kişi sayısı 1–${S.set.maxKisi} arasında tam sayı olmalı`;
+  if (!validISO(s.giris) || !validISO(s.cikis)) return 'Tarih geçersiz';
+  if (dn(s.cikis) <= dn(s.giris)) return 'Çıkış tarihi girişten sonra olmalı';
+  if (!(+s.tutar >= 0)) return 'Tutar 0 veya daha büyük olmalı';
+  if (!S.set.kaynaklar.includes(s.kaynak)) return 'Kaynak listede yok';
+  if (!['Geldi', 'Bekleniyor', 'İptal'].includes(s.durum)) return 'Giriş durumu geçersiz';
+  if (s.durum !== 'İptal') {
+    const o = S.stays.find(x => x.id !== selfId && x.durum !== 'İptal' && +x.oda === +s.oda && dn(x.giris) < dn(s.cikis) && dn(x.cikis) > dn(s.giris));
+    if (o) return `Oda ${room2(s.oda)} bu tarihlerde dolu: ${o.ad} (${fmt(o.giris)} – ${fmt(o.cikis)})`;
+  }
+  if (s.durum === 'Bekleniyor' && validISO(S.date) && dn(s.giris) < dn(S.date)) return 'Giriş günü geçti: durumu "Geldi" veya "İptal" yapın';
+  return null;
+}
+function guestOn(oda, tarih) {
+  return S.stays.find(s => s.durum !== 'İptal' && +s.oda === +oda && dn(s.giris) <= dn(tarih) && dn(s.cikis) >= dn(tarih));
+}
+function checkPay(p) {
+  if (!validISO(p.tarih)) return 'Tarih geçersiz';
+  if (!rooms().includes(+p.oda)) return 'Geçersiz oda no';
+  if (p.yapan !== clean(p.yapan) || p.yapan.length < 3) return 'Ödemeyi yapan en az 3 harf olmalı, baş/son boşluk olmamalı';
+  if (!(+p.tutar > 0)) return 'Tutar 0\'dan büyük olmalı';
+  if (!S.set.turler.includes(p.tur)) return 'Ödeme türü listede yok';
+  if (!guestOn(p.oda, p.tarih)) return `Oda ${room2(p.oda)}'da ${fmt(p.tarih)} tarihinde misafir yok`;
+  return null;
+}
+function allErrors() {
+  const e = [];
+  S.stays.forEach(s => { const m = checkStay(s, s.id); if (m) e.push(`Konaklama – Oda ${room2(s.oda || 0)} ${s.ad || ''}: ${m}`); });
+  S.pays.forEach(p => { const m = checkPay(p); if (m) e.push(`Ödeme – ${fmt(p.tarih)} Oda ${room2(p.oda || 0)} ${p.yapan || ''}: ${m}`); });
+  return e;
+}
+
+/* ---------- Hesaplar ---------- */
+function compute(date) {
+  const D = dn(date), live = S.stays.filter(s => s.durum !== 'İptal');
+  const g = s => s.durum === 'Geldi';
+  const r = {
+    gunBasi: live.filter(s => g(s) && dn(s.giris) < D && dn(s.cikis) >= D),
+    gelen: live.filter(s => g(s) && dn(s.giris) === D),
+    gelecek: live.filter(s => s.durum === 'Bekleniyor' && dn(s.giris) === D),
+    giden: live.filter(s => g(s) && dn(s.cikis) === D),
+    gunSonu: live.filter(s => dn(s.giris) <= D && dn(s.cikis) > D),
+  };
+  const sum = a => a.reduce((t, s) => t + +s.kisi, 0);
+  r.k = Object.fromEntries(Object.keys(r).map(k => [k, sum(r[k])]));
+  r.cls = s => dn(s.giris) === D ? 0 : (dn(s.cikis) - dn(s.giris) >= 30 ? 2 : 1); // 0 yeni, 1 kısa, 2 uzun
+  r.expected = r.gunBasi.length - r.giden.length + r.gelen.length + r.gelecek.length;
+  r.expectedK = r.k.gunBasi - r.k.giden + r.k.gelen + r.k.gelecek;
+  r.consistent = r.expected === r.gunSonu.length && r.expectedK === r.k.gunSonu;
+  const occ = new Set(r.gunSonu.map(s => +s.oda));
+  r.bos = rooms().filter(o => !occ.has(o));
+  r.pays = S.pays.filter(p => p.tarih === date);
+  return r;
+}
+
+/* ---------- Rapor görseli (canvas) ---------- */
+function wrapRooms(ctx, list, maxW) {
+  const out = []; let cur = '';
+  list.forEach((o, i) => {
+    const t = room2(o) + (i < list.length - 1 ? '-' : '');
+    if (cur && ctx.measureText(cur + t).width > maxW) { out.push(cur); cur = t; } else cur += t;
+  });
+  if (cur) out.push(cur);
+  return out;
+}
+function drawReport(date, kirli) {
+  const R = compute(date), K = 2;
+  const cw = [150, 272, 128, 162, 173, 173, 187, 142, 213], W = cw.reduce((a, b) => a + b, 0);
+  const cx = [0]; cw.forEach(w => cx.push(cx[cx.length - 1] + w));
+  const rows = R.gunSonu.slice().sort((a, b) => R.cls(b) - R.cls(a) || a.oda - b.oda);
+  const pays = R.pays;
+  const PAD = 6, FONT = 'Segoe UI, Arial, sans-serif';
+  const hTop = [30, 32, 108, 32], hHead = 52, hRow = 28, hTot1 = 30, hTot2 = 38, gap = 16, hPH = 32, hPR = 32;
+  const H = PAD * 2 + hTop.reduce((a, b) => a + b) + hHead + rows.length * hRow + hTot1 + hTot2 + gap + hPH + Math.max(1, pays.length) * hPR;
+  const cv = document.createElement('canvas');
+  cv.width = (W + PAD * 2) * K; cv.height = H * K;
+  const c = cv.getContext('2d'); c.scale(K, K);
+  c.fillStyle = '#fff'; c.fillRect(0, 0, cv.width, cv.height);
+  const BLUE = '#bdd7ee', LBLUE = '#cfe8fb', GREY = '#ededed', GREEN = '#d3e8c5';
+
+  function cell(c0, c1, y, h, txt, o = {}) {
+    const x = PAD + cx[c0], w = cx[c1 + 1] - cx[c0];
+    if (o.fill) { c.fillStyle = o.fill; c.fillRect(x, y, w, h); }
+    c.strokeStyle = '#222'; c.lineWidth = o.thick ? 2 : 1; c.strokeRect(x + .5, y + .5, w - 1, h - 1);
+    if (txt === '' || txt == null) return;
+    let size = o.size || 17;
+    const weight = o.bold ? '700 ' : '400 ';
+    let lines;
+    const setF = () => { c.font = `${weight}${size}px ${FONT}`; };
+    if (o.rooms) { setF(); lines = wrapRooms(c, txt, w - 14); while (size > 12 && lines.length * size * 1.3 > h - 6) { size--; setF(); lines = wrapRooms(c, txt, w - 14); } }
+    else if (o.lines) lines = Array.isArray(txt) ? txt : [String(txt)];
+    else lines = [String(txt)];
+    setF();
+    while (size > 10 && lines.some(l => c.measureText(l).width > w - 12)) { size--; setF(); }
+    c.fillStyle = o.color || '#111'; c.textBaseline = 'middle'; c.textAlign = o.left ? 'left' : 'center';
+    const lh = size * 1.3, y0 = y + h / 2 - (lines.length - 1) * lh / 2, tx = o.left ? x + 8 : x + w / 2;
+    lines.forEach((l, i) => c.fillText(l, tx, y0 + i * lh));
+  }
+  const groupLines = (arr, key) => {  // sınıfa göre satırlar, satır sonlarına '-' eklenir
+    const gs = [[], [], []];
+    arr.slice().sort((a, b) => a.oda - b.oda).forEach(s => gs[key(s)].push(room2(s.oda)));
+    const ls = gs.filter(g => g.length).map(g => g.join('-'));
+    return ls.map((l, i) => i < ls.length - 1 ? l + '-' : l);
+  };
+
+  let y = PAD;
+  const [h1, h2, h3, h4] = hTop;
+  cell(0, 0, y, h1 + h2, fmt(date), { bold: true, size: 24, thick: true });
+  ['Gün Başı', 'Gelen', 'Gelecek', 'Giden', 'Gün Sonu', 'Boş Odalar'].forEach((t, i) =>
+    cell(i + 1, i + 1, y, h1, t, { bold: true, size: 19, fill: i === 4 ? BLUE : i === 5 ? '#c9e5b8' : '' }));
+  cell(7, 8, y, h1 + h2, 'BOŞ ODA DURUMU', { bold: true, size: 24 });
+  const cnt = [R.gunBasi.length, R.gelen.length, R.gelecek.length, R.giden.length, R.gunSonu.length, R.bos.length];
+  cnt.forEach((n, i) => cell(i + 1, i + 1, y + h1, h2, n, { bold: true, size: 26, fill: i === 4 ? BLUE : i === 5 ? '#c9e5b8' : '' }));
+  y += h1 + h2;
+  cell(0, 0, y, h3, 'Oda No', { bold: true, size: 20 });
+  const asRooms = a => a.slice().sort((p, q) => p.oda - q.oda).map(s => room2(s.oda)).join('-');
+  const gbLines = [...[R.giden, R.gunBasi.filter(s => !R.giden.includes(s) && dn(s.cikis) - dn(s.giris) < 30), R.gunBasi.filter(s => !R.giden.includes(s) && dn(s.cikis) - dn(s.giris) >= 30)]
+    .map(g => g.map(s => room2(s.oda)).sort().join('-')).filter(Boolean)];
+  cell(1, 1, y, h3, gbLines.map((l, i) => i < gbLines.length - 1 ? l + '-' : l), { lines: true, bold: true, size: 19 });
+  cell(2, 2, y, h3, asRooms(R.gelen), { bold: true, size: 19 });
+  cell(3, 3, y, h3, asRooms(R.gelecek), { bold: true, size: 19 });
+  cell(4, 4, y, h3, asRooms(R.giden), { bold: true, size: 19 });
+  cell(5, 5, y, h3, groupLines(R.gunSonu, R.cls), { lines: true, bold: true, size: 19 });
+  cell(6, 6, y, h3, R.bos, { rooms: true, bold: true, size: 19 });
+  cell(7, 8, y, h3, [`${R.bos.length - kirli} ODA BOŞ VE TEMİZ //`, `${kirli} ODA BOŞ VE KİRLİ`], { bold: true, size: 20, lines: true });
+  y += h3;
+  cell(0, 0, y, h4, 'Kişi Sayısı', { bold: true, size: 17, fill: BLUE });
+  [R.k.gunBasi, R.k.gelen, R.k.gelecek, R.k.giden, R.k.gunSonu].forEach((n, i) =>
+    cell(i + 1, i + 1, y, h4, n, { size: i === 4 ? 24 : 20, bold: i === 4, fill: BLUE }));
+  cell(6, 6, y, h4, '', { fill: BLUE });
+  cell(7, 8, y, h4, R.bos.length, { size: 20, fill: BLUE });
+  y += h4;
+
+  ['Oda - Gün Sonu', 'İsim - Gün Sonu', 'Kişi Sayısı', 'Giriş Tarihi', 'Çıkış Tarihi', 'Süre (Gün)', 'Günlük Oda Fiyatı', 'Toplam Tutar', 'Açıklama']
+    .forEach((t, i) => cell(i, i, y, hHead, t, { bold: true, size: 19 }));
+  y += hHead;
+  let totG = 0, totK = 0;
+  rows.forEach(s => {
+    const k = R.cls(s), sure = dn(s.cikis) - dn(s.giris), gun = +s.tutar / sure;
+    totG += gun; totK += +s.kisi;
+    const o = { fill: k === 0 ? GREEN : k === 2 ? LBLUE : GREY, bold: k === 0, size: 17 };
+    cell(0, 0, y, hRow, s.oda, o); cell(1, 1, y, hRow, s.ad, o); cell(2, 2, y, hRow, s.kisi, o);
+    cell(3, 3, y, hRow, fmt(s.giris), o); cell(4, 4, y, hRow, fmt(s.cikis), o); cell(5, 5, y, hRow, sure, o);
+    cell(6, 6, y, hRow, TL(gun), o); cell(7, 7, y, hRow, TL(s.tutar), o); cell(8, 8, y, hRow, s.kaynak + (s.durum === 'Bekleniyor' ? '' : ''), o);
+    y += hRow;
+  });
+  [[0, 0, 'Toplam Oda'], [2, 2, 'Toplam Kişi'], [6, 6, 'Günlük Toplam'], [7, 7, 'Günlük Ort']].forEach(([a, b, t]) => cell(a, b, y, hTot1, t, { bold: true, size: 18 }));
+  y += hTot1;
+  cell(0, 0, y, hTot2, rows.length, { bold: true, size: 24, fill: BLUE });
+  cell(2, 2, y, hTot2, totK, { bold: true, size: 24, fill: BLUE });
+  cell(6, 6, y, hTot2, TL(totG), { bold: true, size: 22, fill: BLUE });
+  cell(7, 7, y, hTot2, TL(rows.length ? totG / rows.length : 0), { bold: true, size: 22, fill: BLUE });
+  y += hTot2 + gap;
+  cell(0, 0, y, hPH, 'ÖDEME', { bold: true, size: 18 }); cell(1, 1, y, hPH, 'ÖDEMEYİ YAPAN', { bold: true, size: 18 });
+  cell(2, 2, y, hPH, 'TUTAR', { bold: true, size: 18 }); cell(3, 8, y, hPH, 'AÇIKLAMA', { bold: true, size: 18 });
+  y += hPH;
+  if (!pays.length) { cell(0, 8, y, hPR, 'Bu gün ödeme alınmadı', { size: 17, color: '#666' }); }
+  pays.forEach(p => {
+    cell(0, 0, y, hPR, `${p.oda} NO`, { size: 17 }); cell(1, 1, y, hPR, p.yapan, { size: 18 });
+    cell(2, 2, y, hPR, TL(p.tutar), { size: 18 });
+    cell(3, 8, y, hPR, `${fmt(p.tarih)}     ${p.tur}${p.acik ? '     ' + p.acik : ''}`, { size: 17 });
+    y += hPR;
+  });
+  return cv;
+}
+
+/* ---------- Arayüz ---------- */
+let kEdit = null, oEdit = null, lastCanvas = null;
+const msg = (el, cls, html) => { el.innerHTML = html ? `<div class="msg ${cls}">${html}</div>` : ''; };
+
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('.pane').forEach(p => p.classList.toggle('on', p.id === 'p-' + b.dataset.t));
+  render();
+});
+
+function fillSelects() {
+  const opt = (a, f = x => x) => a.map(x => `<option value="${esc(x)}">${esc(f(x))}</option>`).join('');
+  const keepK = $('#k-oda').value, keepO = $('#o-oda').value;
+  $('#k-oda').innerHTML = '<option value="">Seçin…</option>' + opt(rooms(), room2);
+  $('#o-oda').innerHTML = '<option value="">Seçin…</option>' + opt(rooms(), room2);
+  $('#k-oda').value = keepK; $('#o-oda').value = keepO;
+  const kk = $('#k-kaynak').value, tt = $('#o-tur').value;
+  $('#k-kaynak').innerHTML = '<option value="">Seçin…</option>' + opt(S.set.kaynaklar);
+  $('#o-tur').innerHTML = '<option value="">Seçin…</option>' + opt(S.set.turler);
+  $('#k-kaynak').value = kk; $('#o-tur').value = tt;
+  $('#k-kisi').max = S.set.maxKisi;
+}
+
+function readStay() {
+  return { id: kEdit || uid(), oda: +$('#k-oda').value || '', ad: clean($('#k-ad').value), kisi: $('#k-kisi').value === '' ? '' : +$('#k-kisi').value,
+    giris: $('#k-giris').value, cikis: $('#k-cikis').value, durum: $('#k-durum').value,
+    tutar: $('#k-tutar').value === '' ? '' : +$('#k-tutar').value, kaynak: $('#k-kaynak').value };
+}
+function checkStayForm() {
+  const s = readStay();
+  const touched = ['oda', 'ad', 'kisi', 'giris', 'cikis', 'tutar', 'kaynak'].some(k => s[k] !== '');
+  const m = touched ? checkStay(s, kEdit) : 'Bilgileri girin';
+  msg($('#k-msg'), touched && m ? 'bad' : 'ok', touched ? (m || '✔ Kayıt geçerli') : '');
+  $('#k-save').disabled = !!m;
+}
+['k-oda', 'k-ad', 'k-kisi', 'k-giris', 'k-cikis', 'k-durum', 'k-tutar', 'k-kaynak'].forEach(id => $('#' + id).addEventListener('input', checkStayForm));
+$('#k-giris').addEventListener('change', () => {
+  const g = $('#k-giris').value;
+  if (validISO(g)) {
+    $('#k-cikis').min = fromDn(dn(g) + 1);
+    if (!kEdit) $('#k-durum').value = dn(g) > dn(todayISO()) || (dn(g) === dn(todayISO()) && false) ? 'Bekleniyor' : 'Geldi';
+  }
+  checkStayForm();
+});
+$('#k-save').onclick = () => {
+  const s = readStay(); if (checkStay(s, kEdit)) return;
+  const i = S.stays.findIndex(x => x.id === s.id);
+  if (i >= 0) S.stays[i] = s; else S.stays.push(s);
+  save(); resetStayForm(); render();
+};
+function resetStayForm() {
+  kEdit = null; ['k-oda', 'k-ad', 'k-kisi', 'k-giris', 'k-cikis', 'k-tutar', 'k-kaynak'].forEach(id => $('#' + id).value = '');
+  $('#k-durum').value = 'Geldi'; $('#k-title') ; $('#kon-title').textContent = 'Yeni konaklama'; $('#k-cancel').hidden = true; checkStayForm();
+}
+$('#k-cancel').onclick = resetStayForm;
+
+function readPay() {
+  return { id: oEdit || uid(), tarih: $('#o-tarih').value, oda: +$('#o-oda').value || '', yapan: clean($('#o-yapan').value),
+    tutar: $('#o-tutar').value === '' ? '' : +$('#o-tutar').value, tur: $('#o-tur').value, acik: $('#o-acik').value.replace(/\s+/g, ' ').trim() };
+}
+function checkPayForm() {
+  const p = readPay();
+  const touched = ['oda', 'yapan', 'tutar', 'tur'].some(k => p[k] !== '');
+  const m = touched ? checkPay(p) : 'x';
+  msg($('#o-msg'), touched && m ? 'bad' : 'ok', touched ? (m || '✔ Kayıt geçerli') : '');
+  $('#o-save').disabled = !!m;
+}
+['o-tarih', 'o-oda', 'o-yapan', 'o-tutar', 'o-tur', 'o-acik'].forEach(id => $('#' + id).addEventListener('input', checkPayForm));
+$('#o-oda').addEventListener('change', () => {
+  const g = validISO($('#o-tarih').value) && $('#o-oda').value ? guestOn($('#o-oda').value, $('#o-tarih').value) : null;
+  if (g && !$('#o-yapan').value) $('#o-yapan').value = g.ad;
+  checkPayForm();
+});
+$('#o-save').onclick = () => {
+  const p = readPay(); if (checkPay(p)) return;
+  const i = S.pays.findIndex(x => x.id === p.id);
+  if (i >= 0) S.pays[i] = p; else S.pays.push(p);
+  save(); resetPayForm(); render();
+};
+function resetPayForm() {
+  oEdit = null; ['o-oda', 'o-yapan', 'o-tutar', 'o-tur', 'o-acik'].forEach(id => $('#' + id).value = '');
+  $('#o-tarih').value = S.date; $('#o-title').textContent = 'Yeni ödeme'; $('#o-cancel').hidden = true; checkPayForm();
+}
+$('#o-cancel').onclick = resetPayForm;
+
+function renderKon() {
+  const f = $('#k-filter').value, q = $('#k-search').value.trim().toLocaleUpperCase('tr-TR');
+  const D = validISO(S.date) ? dn(S.date) : 0;
+  const bad = new Set(S.stays.filter(s => checkStay(s, s.id)).map(s => s.id));
+  const list = S.stays.filter(s => (f === 'all' || dn(s.cikis) >= D) && (!q || (s.ad + ' ' + s.oda).toLocaleUpperCase('tr-TR').includes(q)))
+    .sort((a, b) => dn(b.giris) - dn(a.giris) || a.oda - b.oda);
+  $('#k-list').innerHTML = list.map(s => `<tr class="${bad.has(s.id) ? 'bad' : s.durum === 'İptal' ? 'cancel' : s.durum === 'Bekleniyor' ? 'new' : ''}">
+    <td>${esc(s.oda)}</td><td>${esc(s.ad)}</td><td>${s.kisi}</td><td>${fmt(s.giris)}</td><td>${fmt(s.cikis)}</td><td>${s.durum}</td><td>${TL(s.tutar)}</td><td>${esc(s.kaynak)}</td>
+    <td style="white-space:nowrap">${s.durum === 'Bekleniyor' ? `<button class="btn" data-a="geldi" data-id="${s.id}">Geldi</button><button class="btn sec" data-a="iptal" data-id="${s.id}">İptal</button>` : ''}
+    <button class="btn sec" data-a="edit" data-id="${s.id}">Düzenle</button><button class="btn red" data-a="del" data-id="${s.id}">Sil</button></td></tr>`).join('') || '<tr><td colspan="9" class="small">Kayıt yok</td></tr>';
+}
+$('#k-list').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const s = S.stays.find(x => x.id === b.dataset.id); if (!s) return;
+  if (b.dataset.a === 'geldi') { const t = { ...s, durum: 'Geldi' }; const m = checkStay(t, s.id); if (m) return alert(m); Object.assign(s, t); }
+  if (b.dataset.a === 'iptal') s.durum = 'İptal';
+  if (b.dataset.a === 'del') { if (!confirm(`${s.ad} (oda ${s.oda}) kaydı kalıcı silinsin mi?\nÇıkmış misafirleri silmeyin; yalnızca hatalı kayıtları silin.`)) return; S.stays = S.stays.filter(x => x !== s); }
+  if (b.dataset.a === 'edit') {
+    kEdit = s.id; $('#k-oda').value = s.oda; $('#k-ad').value = s.ad; $('#k-kisi').value = s.kisi; $('#k-giris').value = s.giris; $('#k-cikis').value = s.cikis;
+    $('#k-durum').value = s.durum; $('#k-tutar').value = s.tutar; $('#k-kaynak').value = s.kaynak;
+    $('#kon-title').textContent = 'Konaklamayı düzenle'; $('#k-cancel').hidden = false; checkStayForm(); scrollTo(0, 0); return;
+  }
+  save(); render();
+};
+$('#k-filter').onchange = $('#k-search').oninput = renderKon;
+
+function renderOde() {
+  const all = $('#o-filter').value === 'all';
+  const bad = new Set(S.pays.filter(checkPay).map(p => p.id));
+  const list = S.pays.filter(p => all || p.tarih === S.date).sort((a, b) => b.tarih.localeCompare(a.tarih));
+  $('#o-list').innerHTML = list.map(p => `<tr class="${bad.has(p.id) ? 'bad' : ''}"><td>${fmt(p.tarih)}</td><td>${p.oda}</td><td>${esc(p.yapan)}</td><td>${TL2(p.tutar)}</td><td>${esc(p.tur)}</td><td>${esc(p.acik)}</td>
+    <td style="white-space:nowrap"><button class="btn sec" data-a="edit" data-id="${p.id}">Düzenle</button><button class="btn red" data-a="del" data-id="${p.id}">Sil</button></td></tr>`).join('') || '<tr><td colspan="7" class="small">Ödeme yok</td></tr>';
+}
+$('#o-list').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const p = S.pays.find(x => x.id === b.dataset.id); if (!p) return;
+  if (b.dataset.a === 'del') { if (!confirm('Ödeme kaydı silinsin mi?')) return; S.pays = S.pays.filter(x => x !== p); save(); render(); return; }
+  oEdit = p.id; $('#o-tarih').value = p.tarih; $('#o-oda').value = p.oda; $('#o-yapan').value = p.yapan; $('#o-tutar').value = p.tutar; $('#o-tur').value = p.tur; $('#o-acik').value = p.acik;
+  $('#o-title').textContent = 'Ödemeyi düzenle'; $('#o-cancel').hidden = false; checkPayForm(); scrollTo(0, 0);
+};
+$('#o-filter').onchange = renderOde;
+
+function renderRapor() {
+  const errs = allErrors(), date = S.date;
+  let html = '', ok = true;
+  if (!validISO(date)) { html = '<div class="msg bad">Geçerli bir rapor tarihi seçin.</div>'; ok = false; }
+  else {
+    if (errs.length) { ok = false; html += `<div class="msg bad"><b>⚠ ${errs.length} hata var — düzeltmeden rapor oluşturulamaz</b><ul>${errs.map(e => `<li>${esc(e)}</li>`).join('')}</ul></div>`; }
+    const R = compute(date);
+    if (!R.consistent) { ok = false; html += '<div class="msg bad">⚠ Gün sonu oda/kişi sayısı tutmuyor — kayıtları kontrol edin.</div>'; }
+    const kir = S.kirli[date];
+    $('#kirli').max = R.bos.length;
+    if (kir == null || kir === '') { ok = false; html += '<div class="msg warn">Kirli boş oda sayısını girin (yoksa 0).</div>'; }
+    else if (kir > R.bos.length) { ok = false; html += `<div class="msg bad">Kirli oda sayısı boş oda sayısından (${R.bos.length}) fazla olamaz.</div>`; }
+    if (ok) html = '<div class="msg ok">✔ Kontroller temiz — rapor oluşturulabilir.</div>';
+    $('#sumline').textContent = `Gün başı ${R.gunBasi.length} · Gelen ${R.gelen.length} · Gelecek ${R.gelecek.length} · Giden ${R.giden.length} · Gün sonu ${R.gunSonu.length} · Boş ${R.bos.length}`;
+  }
+  $('#status').innerHTML = html; $('#gen').disabled = !ok;
+}
+$('#kirli').oninput = () => { const v = $('#kirli').value; S.kirli[S.date] = v === '' ? null : Math.max(0, Math.floor(+v)); save(); invalidate(); renderRapor(); };
+function invalidate() { lastCanvas = null; $('#result').innerHTML = ''; $('#actions').hidden = true; }
+$('#gen').onclick = () => {
+  if (allErrors().length) return;
+  const cv = drawReport(S.date, S.kirli[S.date]); lastCanvas = cv;
+  $('#result').innerHTML = `<img alt="Gün sonu raporu" src="${cv.toDataURL('image/png')}">`;
+  $('#actions').hidden = false;
+  $('#share').hidden = !(navigator.canShare && navigator.share);
+};
+const fname = () => `Apart_Gun_Sonu_${fmt(S.date)}.png`;
+const blobOf = () => new Promise(r => lastCanvas.toBlob(r, 'image/png'));
+$('#dl').onclick = async () => { const a = document.createElement('a'); a.href = URL.createObjectURL(await blobOf()); a.download = fname(); a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); };
+$('#share').onclick = async () => {
+  const f = new File([await blobOf()], fname(), { type: 'image/png' });
+  try { if (navigator.canShare({ files: [f] })) await navigator.share({ files: [f], title: 'Apart Gün Sonu ' + fmt(S.date) }); else alert('Bu cihaz paylaşımı desteklemiyor, "PNG olarak indir" kullanın.'); } catch (e) { /* kullanıcı vazgeçti */ }
+};
+$('#prn').onclick = () => window.print();
+
+$('#rdate').onchange = () => { S.date = $('#rdate').value; save(); resetPayForm(); invalidate(); render(); };
+
+/* Ayarlar */
+function renderAyar() { $('#a-o1').value = S.set.oda1; $('#a-o2').value = S.set.oda2; $('#a-max').value = S.set.maxKisi; $('#a-kay').value = S.set.kaynaklar.join('\n'); $('#a-tur').value = S.set.turler.join('\n'); }
+$('#a-save').onclick = () => {
+  const lines = id => [...new Set($(id).value.split('\n').map(clean).filter(Boolean))];
+  const o1 = +$('#a-o1').value, o2 = +$('#a-o2').value, mx = +$('#a-max').value, kay = lines('#a-kay'), tur = lines('#a-tur');
+  if (!(Number.isInteger(o1) && Number.isInteger(o2) && o1 >= 1 && o2 >= o1 && mx >= 1 && kay.length && tur.length)) return msg($('#a-msg'), 'bad', 'Ayarlar geçersiz: oda aralığını, azami kişiyi ve listeleri kontrol edin.');
+  S.set = { oda1: o1, oda2: o2, maxKisi: mx, kaynaklar: kay, turler: tur }; save(); fillSelects(); invalidate(); render();
+  msg($('#a-msg'), allErrors().length ? 'warn' : 'ok', allErrors().length ? 'Kaydedildi; ancak mevcut kayıtlarda yeni ayarlara uymayanlar var (Rapor sekmesine bakın).' : 'Ayarlar kaydedildi.');
+};
+$('#b-exp').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(S)], { type: 'application/json' })); a.download = `apart-yedek-${todayISO()}.json`; a.click(); };
+$('#b-imp').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  f.text().then(t => { const d = JSON.parse(t); if (!Array.isArray(d.stays) || !Array.isArray(d.pays) || !d.set) throw 0; if (!confirm('Mevcut veriler yedekle değiştirilecek. Devam?')) return; S = Object.assign(defaults(), d); save(); init(); })
+    .catch(() => alert('Geçersiz yedek dosyası.'));
+};
+$('#b-clear').onclick = () => { if (confirm('TÜM konaklama ve ödeme kayıtları silinecek. Emin misiniz?') && confirm('Bu işlem geri alınamaz. Silinsin mi?')) { S = defaults(); save(); init(); } };
+$('#b-demo').onclick = () => {
+  if (S.stays.length && !confirm('Mevcut veriler örnek veriyle değiştirilecek. Devam?')) return;
+  const st = (oda, ad, kisi, g, sure, tutar, kaynak, durum = 'Geldi') => ({ id: uid(), oda, ad, kisi, giris: g, cikis: fromDn(dn(g) + sure), durum, tutar, kaynak });
+  S = defaults(); S.date = '2026-09-30'; S.kirli['2026-09-30'] = 1;
+  S.stays = [st(18, 'MUHAMMET SEMİH KÖSE', 4, '2026-09-13', 285, 498192, 'ÖĞRENCİ'), st(20, 'MEHMET EFE ÇELEBİ', 4, '2026-09-21', 267, 471522, 'ÖĞRENCİ'),
+    st(22, 'HAYAL YAVAŞ', 4, '2026-09-16', 272, 480352, 'ÖĞRENCİ'), st(24, 'BEREN TEZSEZENER', 2, '2026-09-12', 276, 482298, 'ÖĞRENCİ'),
+    st(26, 'HİLAL KIVRAK', 2, '2026-09-04', 284, 496450, 'ÖĞRENCİ'), st(29, 'EDA NUR RUŞİTLER', 2, '2026-09-13', 275, 480532, 'ÖĞRENCİ'),
+    st(13, 'ZAKARIA EL KHATABI', 3, '2026-09-25', 6, 30600, 'MÜNFERİT'), st(16, 'SALİH ARABAYAPAN', 5, '2026-09-27', 7, 37999.99, 'MÜNFERİT'),
+    st(31, 'MEHMET EMIN DINC', 4, '2026-09-26', 7, 37087, 'ODAMAX'), st(8, 'KÜBRA TOPRAK KOLCU', 4, '2026-09-30', 1, 4337, 'JOLLYTUR'),
+    st(14, 'BATI BAKKALOĞLU', 5, '2026-09-30', 4, 20000, 'MÜNFERİT'), st(25, 'MEHMET YENER', 4, '2026-09-30', 4, 2000, 'COMP-MARATON', 'Bekleniyor'),
+    st(28, 'ÇERKEZ BİLİR', 2, '2026-09-30', 4, 2000, 'COMP-MARATON', 'Bekleniyor'),
+    st(6, 'ÖRNEK GİDEN MİSAFİR 06', 3, '2026-09-27', 3, 0, 'MÜNFERİT'), st(7, 'ÖRNEK GİDEN MİSAFİR 07', 3, '2026-09-27', 3, 0, 'MÜNFERİT'), st(8, 'ÖRNEK GİDEN MİSAFİR 08', 4, '2026-09-27', 3, 0, 'MÜNFERİT')];
+  S.pays = [{ id: uid(), tarih: '2026-09-30', oda: 14, yapan: 'BATI BAKKALOĞLU', tutar: 10000, tur: 'KK', acik: '' }];
+  save(); init();
+};
+
+function render() {
+  $('#rdate').value = S.date;
+  $('#kirli').value = S.kirli[S.date] ?? '';
+  renderRapor(); renderKon(); renderOde(); checkStayForm(); checkPayForm();
+}
+function init() { fillSelects(); renderAyar(); resetStayForm(); resetPayForm(); invalidate(); render(); }
+init();
+</script>
+</body>
+</html>
