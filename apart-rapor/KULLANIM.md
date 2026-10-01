@@ -47,3 +47,14 @@ Excel'de makro olmadan "Rapor Oluştur" butonu yapılamadığı için aynı mant
 Tarayıcıda açın (bilgisayar/telefon), verileri girin, **📄 Rapor Oluştur** ile boş satırsız, tek parça PNG rapor görseli alın;
 **PNG indir**, **Paylaş** (WhatsApp vb.) veya **Yazdır/PDF** ile gönderin. Doğrulama kuralları Excel'dekiyle aynıdır
 ve hata varken rapor oluşturulmaz. Veriler tarayıcıda saklanır; Ayarlar'dan JSON yedeği alın. "Örnek veriyi yükle" ile 30.09.2026 örneği denenebilir.
+
+### İki rapor formatı
+- **Geliştirilmiş (varsayılan):** doluluk %, gün başı/gelen/gelecek/giden/gün sonu/boş kutuları, renkli oda haritası, isimli hareket listeleri, konuk tablosu, ödemeler ve tahsilat toplamı, yarın özeti. Telefonda okunacak dikey formattır.
+- **Klasik:** mevcut Excel raporunuzun birebir görünümü. Rapor sekmesindeki "Format" menüsünden seçilir.
+
+### Resepsiyon için kolaylıklar
+- Yeni misafir formunda giriş tarihi rapor tarihi gelir; **gece sayısı** (veya 1/2/3/7/30 hızlı butonları) yazılınca çıkış tarihi otomatik hesaplanır.
+- Seçilen tarihlerde dolu olan odalar listede "— dolu" görünür ve seçilemez.
+- Kaynak, en son kullanılan değerle önceden seçili gelir. İsimler otomatik BÜYÜK HARF yapılır.
+- Rapor sekmesinde bugün gelecek misafirler için tek dokunuşla **Geldi / İptal**.
+- Boş odalardan kirli olanlar dokunarak işaretlenir; bugün çıkış yapan odalar otomatik kirli işaretlenir, temizlenenler dokunup kaldırılır.

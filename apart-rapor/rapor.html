@@ -38,6 +38,11 @@ tr.new td{background:#eaf5e1}tr.cancel td{color:#999;text-decoration:line-throug
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0}
 .small{font-size:12px;color:var(--mut)}
 td .btn{padding:4px 9px;font-size:12px;margin-right:3px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin:10px 0}
+.card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:10px 0}.cards .card{margin:0}
+.card h3{margin:0 0 6px;font-size:14px}.card ul{margin:0;padding:0;list-style:none}.card li{padding:6px 0;border-bottom:1px solid #eef1f5;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.chip{border:1px solid #5aa86f;background:#fff;border-radius:8px;padding:8px 12px;font:inherit;cursor:pointer;min-width:48px}
+.chip.dirty{background:#fbd3b0;border-color:#d9622b;font-weight:700}
 #result img{max-width:100%;border:1px solid var(--line);margin-top:12px;background:#fff}
 @media print{header,nav,.noprint,.pane:not(#p-rapor) {display:none!important}main{box-shadow:none;margin:0;padding:0}#p-rapor>*:not(#result){display:none!important}#result img{border:0;width:100%}}
 </style>
@@ -56,11 +61,13 @@ td .btn{padding:4px 9px;font-size:12px;margin-right:3px}
 <main>
 <section class="pane on" id="p-rapor">
   <div id="status"></div>
+  <div id="quick" class="noprint"></div>
+  <div id="kirliBox" class="noprint"></div>
   <div class="row noprint">
-    <div class="f" style="max-width:260px"><label for="kirli">Kirli boş oda sayısı (yoksa 0)</label><input id="kirli" type="number" min="0" step="1" inputmode="numeric"></div>
-    <div id="sumline" class="small"></div>
+    <button class="btn big" id="gen">📄 Rapor Oluştur</button>
+    <label class="small">Format <select id="fmt" class="btn sec"><option value="yeni">Geliştirilmiş</option><option value="klasik">Klasik (mevcut)</option></select></label>
   </div>
-  <div class="row noprint"><button class="btn big" id="gen">📄 Rapor Oluştur</button></div>
+  <div id="sumline" class="small noprint"></div>
   <div id="result"></div>
   <div class="row noprint" id="actions" hidden>
     <button class="btn" id="dl">⬇ PNG olarak indir</button>
@@ -77,10 +84,12 @@ td .btn{padding:4px 9px;font-size:12px;margin-right:3px}
     <div class="f"><label>Kişi sayısı</label><input id="k-kisi" type="number" min="1" step="1" inputmode="numeric"></div>
     <div class="f"><label>Giriş tarihi</label><input id="k-giris" type="date"></div>
     <div class="f"><label>Çıkış tarihi</label><input id="k-cikis" type="date"></div>
+    <div class="f"><label>Gece sayısı</label><input id="k-gece" type="number" min="1" step="1" inputmode="numeric"></div>
     <div class="f"><label>Giriş durumu</label><select id="k-durum"><option>Geldi</option><option>Bekleniyor</option><option>İptal</option></select></div>
     <div class="f"><label>Toplam tutar (₺)</label><input id="k-tutar" type="number" min="0" step="0.01" inputmode="decimal"></div>
     <div class="f"><label>Açıklama / kaynak</label><select id="k-kaynak"></select></div>
   </div>
+  <div class="row small" id="k-quick">Hızlı gece: <button class="btn sec" data-n="1">1</button><button class="btn sec" data-n="2">2</button><button class="btn sec" data-n="3">3</button><button class="btn sec" data-n="7">7</button><button class="btn sec" data-n="30">30</button></div>
   <div id="k-msg"></div>
   <div class="row"><button class="btn" id="k-save">Kaydet</button><button class="btn sec" id="k-cancel" hidden>Vazgeç</button></div>
   <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
@@ -153,14 +162,14 @@ const clean = s => (s || '').replace(/\s+/g, ' ').trim().toLocaleUpperCase('tr-T
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const defaults = () => ({
-  stays: [], pays: [], kirli: {}, date: todayISO(),
+  stays: [], pays: [], kirli: {}, date: todayISO(), format: 'yeni', lastKaynak: '',
   set: { oda1: 3, oda2: 32, maxKisi: 6,
     kaynaklar: ['ÖĞRENCİ', 'MÜNFERİT', 'ODAMAX', 'JOLLYTUR', 'COMP-MARATON'],
     turler: ['NAKİT', 'KK', 'HAVALE/EFT'] }
 });
 let S;
 try { S = Object.assign(defaults(), JSON.parse(localStorage.getItem(LS) || '{}')); } catch (e) { S = defaults(); }
-const save = () => { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) { alert('Veri kaydedilemedi: tarayıcı depolaması kapalı olabilir.'); } };
+const save = () => { invalidate(); try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) { alert('Veri kaydedilemedi: tarayıcı depolaması kapalı olabilir.'); } };
 const rooms = () => { const a = []; for (let i = S.set.oda1; i <= S.set.oda2; i++) a.push(i); return a; };
 
 /* ---------- Doğrulama ---------- */
@@ -235,7 +244,7 @@ function wrapRooms(ctx, list, maxW) {
   if (cur) out.push(cur);
   return out;
 }
-function drawReport(date, kirli) {
+function drawReportClassic(date, kirli) {
   const R = compute(date), K = 2;
   const cw = [150, 272, 128, 162, 173, 173, 187, 142, 213], W = cw.reduce((a, b) => a + b, 0);
   const cx = [0]; cw.forEach(w => cx.push(cx[cx.length - 1] + w));
@@ -336,6 +345,150 @@ function drawReport(date, kirli) {
   return cv;
 }
 
+
+const MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+const DAYS = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+const longDate = iso => `${+iso.slice(8, 10)} ${MONTHS[+iso.slice(5, 7) - 1]} ${iso.slice(0, 4)} ${DAYS[new Date(dn(iso) * 864e5).getUTCDay()]}`;
+function kirliOf(date, R) {
+  const bos = new Set(R.bos); let k = S.kirli[date];
+  if (!Array.isArray(k)) { const gone = new Set(R.giden.map(s => +s.oda)); k = R.bos.filter(o => gone.has(o)); }
+  return k.filter(o => bos.has(o)).sort((a, b) => a - b);
+}
+function drawReport(date) {
+  const R = compute(date);
+  return S.format === 'klasik' ? drawReportClassic(date, kirliOf(date, R).length) : drawReportV2(date);
+}
+function drawReportV2(date) {
+  const R = compute(date), D = dn(date), K = 2, W = 1080, M = 24, IW = W - 2 * M, G = 16, FONT = 'Segoe UI, Arial, sans-serif';
+  const kir = kirliOf(date, R), kirSet = new Set(kir), total = rooms().length;
+  const rows = R.gunSonu.slice().sort((a, b) => R.cls(b) - R.cls(a) || a.oda - b.oda);
+  const live = S.stays.filter(s => s.durum !== 'İptal');
+  const tmrIn = live.filter(s => dn(s.giris) === D + 1), tmrOut = live.filter(s => dn(s.cikis) === D + 1 && s.durum === 'Geldi');
+  const rl = a => a.slice().sort((p, q) => p.oda - q.oda).map(s => room2(s.oda)).join('-');
+  const byRoom = new Map(R.gunSonu.map(s => [+s.oda, s]));
+  const pays = R.pays;
+  const paint = c => {
+    const path = (x, y, w, h, r) => { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); };
+    const box = (x, y, w, h, r, fill, stroke) => { path(x, y, w, h, r); if (fill) { c.fillStyle = fill; c.fill(); } if (stroke) { c.strokeStyle = stroke; c.lineWidth = 1.5; c.stroke(); } };
+    const T = (t, x, y, o = {}) => {
+      let s = o.size || 16; const f = () => `${o.bold ? '700' : '400'} ${s}px ${FONT}`; c.font = f();
+      if (o.maxW) while (s > 9 && c.measureText(String(t)).width > o.maxW) { s--; c.font = f(); }
+      c.fillStyle = o.color || '#1b2430'; c.textAlign = o.align || 'left'; c.textBaseline = 'middle'; c.fillText(String(t), x, y);
+    };
+    let y = M;
+    // Başlık
+    box(M, y, IW, 110, 16, '#1f3864');
+    T('APART GÜN SONU RAPORU', M + 26, y + 30, { size: 17, bold: true, color: '#b9c7e6' });
+    T(longDate(date), M + 26, y + 72, { size: 36, bold: true, color: '#fff', maxW: IW - 280 });
+    T('%' + (total ? Math.round(R.gunSonu.length * 100 / total) : 0), M + IW - 26, y + 46, { size: 48, bold: true, color: '#fff', align: 'right' });
+    T(`${R.gunSonu.length} / ${total} oda dolu`, M + IW - 26, y + 86, { size: 16, color: '#b9c7e6', align: 'right' });
+    y += 110 + G;
+    // KPI
+    const kp = [['GÜN BAŞI', R.gunBasi.length, R.k.gunBasi + ' kişi', '#64748b'], ['GELEN', R.gelen.length, R.k.gelen + ' kişi', '#2e9e4f'],
+      ['GELECEK', R.gelecek.length, R.k.gelecek + ' kişi', '#c98a00'], ['GİDEN', R.giden.length, R.k.giden + ' kişi', '#d9622b'],
+      ['GÜN SONU', R.gunSonu.length, R.k.gunSonu + ' kişi', '#1f6fb2'], ['BOŞ ODA', R.bos.length, kir.length ? `${kir.length} kirli` : 'hepsi temiz', '#6b7f94']];
+    const kg = 10, kw = (IW - kg * 5) / 6;
+    kp.forEach((k, i) => {
+      const x = M + i * (kw + kg); box(x, y, kw, 96, 12, '#fff', '#d5dbe5'); box(x + 12, y, kw - 24, 5, 2, k[3]);
+      T(k[0], x + kw / 2, y + 26, { size: 14, bold: true, color: '#667085', align: 'center' });
+      T(k[1], x + kw / 2, y + 58, { size: 40, bold: true, color: k[3], align: 'center' });
+      T(k[2], x + kw / 2, y + 81, { size: 14, color: '#667085', align: 'center' });
+    });
+    y += 96 + G;
+    // Oda haritası
+    T('ODA DURUMU', M, y + 14, { size: 18, bold: true }); y += 30;
+    const perRow = 10, tg = 8, th = 58, tw = (IW - tg * (perRow - 1)) / perRow;
+    rooms().forEach((o, i) => {
+      const x = M + (i % perRow) * (tw + tg), yy = y + Math.floor(i / perRow) * (th + tg), s = byRoom.get(o);
+      let fill, stroke = '#c3ccd8', l2;
+      if (s) {
+        const k = R.cls(s);
+        if (k === 0 && s.durum === 'Bekleniyor') { fill = '#ffe9a6'; l2 = 'bekleniyor'; }
+        else { fill = k === 0 ? '#cfe8bf' : k === 2 ? '#bcdcf5' : '#e4e8ee'; l2 = s.kisi + ' kişi'; }
+      } else if (kirSet.has(o)) { fill = '#fbd3b0'; l2 = 'kirli'; } else { fill = '#fff'; stroke = '#5aa86f'; l2 = 'boş'; }
+      box(x, yy, tw, th, 10, fill, stroke);
+      T(room2(o), x + tw / 2, yy + 23, { size: 24, bold: true, align: 'center' });
+      T(l2, x + tw / 2, yy + 45, { size: 14, color: '#475569', align: 'center' });
+    });
+    y += Math.ceil(total / perRow) * (th + tg);
+    T(`${R.bos.length - kir.length} ODA BOŞ VE TEMİZ  //  ${kir.length} ODA BOŞ VE KİRLİ${kir.length ? '  (' + kir.map(room2).join('-') + ')' : ''}`, M, y + 12, { size: 17, bold: true, maxW: IW });
+    y += 28;
+    let lx = M;
+    [['#bcdcf5', 'Uzun konaklama'], ['#e4e8ee', 'Konaklayan'], ['#cfe8bf', 'Bugün gelen'], ['#ffe9a6', 'Bekleniyor'], ['#fbd3b0', 'Boş-kirli'], ['#fff', 'Boş-temiz']].forEach(([f, t]) => {
+      box(lx, y + 6, 16, 16, 4, f, '#9aa7b8'); c.font = `400 14px ${FONT}`; T(t, lx + 22, y + 14, { size: 14, color: '#475569' }); lx += 22 + c.measureText(t).width + 22;
+    });
+    y += 30 + G;
+    // Hareketler
+    const MAXL = 8, bw = (IW - 24) / 3;
+    const mv = [['BUGÜN GELEN', R.gelen, '#2e9e4f'], ['GELECEK (bekleniyor)', R.gelecek, '#c98a00'], ['BUGÜN GİDEN', R.giden, '#d9622b']];
+    const lines = m => { const a = m[1].slice().sort((p, q) => p.oda - q.oda); const o = a.slice(0, MAXL).map(s => `${room2(s.oda)} · ${s.ad} · ${s.kisi} kişi`); if (a.length > MAXL) o.push(`+${a.length - MAXL} oda daha`); return o; };
+    const mh = Math.max(...mv.map(m => Math.max(1, lines(m).length))) * 26 + 14;
+    mv.forEach((m, i) => {
+      const x = M + i * (bw + 12); box(x, y, bw, 30 + mh, 12, '#fff', '#d5dbe5');
+      box(x, y, bw, 30, 12, m[2]); c.fillStyle = m[2]; c.fillRect(x, y + 15, bw, 15);
+      T(`${m[0]} (${m[1].length})`, x + 14, y + 16, { size: 15, bold: true, color: '#fff' });
+      const ls = lines(m); if (!ls.length) T('—', x + 14, y + 50, { color: '#94a3b8' });
+      ls.forEach((l, j) => T(l, x + 14, y + 50 + j * 26, { size: 15, maxW: bw - 26 }));
+    });
+    y += 30 + mh + G;
+    // Konuk tablosu
+    T('GÜN SONU KONUK LİSTESİ', M, y + 14, { size: 18, bold: true }); y += 30;
+    const cw = [64, 262, 62, 118, 118, 62, 108, 118, 120], cx = [M]; cw.forEach(w => cx.push(cx[cx.length - 1] + w));
+    box(M, y, IW, 34, 8, '#1f3864');
+    ['Oda', 'İsim', 'Kişi', 'Giriş', 'Çıkış', 'Gece', 'Günlük', 'Toplam', 'Kaynak'].forEach((t, i) =>
+      T(t, i === 1 ? cx[i] + 10 : cx[i] + cw[i] / 2, y + 17, { size: 15, bold: true, color: '#fff', align: i === 1 ? 'left' : 'center' }));
+    y += 34;
+    let totG = 0, totK = 0; const y0 = y;
+    rows.forEach(s => {
+      const k = R.cls(s), n = dn(s.cikis) - dn(s.giris), gun = +s.tutar / n; totG += gun; totK += +s.kisi;
+      c.fillStyle = s.durum === 'Bekleniyor' ? '#fff1c2' : k === 0 ? '#dff0d2' : k === 2 ? '#d6eafa' : '#eef1f5'; c.fillRect(M, y, IW, 30);
+      c.fillStyle = '#fff'; c.fillRect(M, y + 29, IW, 1);
+      const b = k === 0, v = [room2(s.oda), s.ad, s.kisi, fmt(s.giris), fmt(s.cikis), n, TL(gun), TL(s.tutar), s.kaynak];
+      v.forEach((t, i) => T(t, i === 1 ? cx[i] + 10 : cx[i] + cw[i] / 2, y + 15, { size: i === 8 ? 14 : 16, bold: b || i === 0, align: i === 1 ? 'left' : 'center', maxW: cw[i] - 10 }));
+      y += 30;
+    });
+    if (!rows.length) { T('Konaklayan yok', M + IW / 2, y + 15, { color: '#667085', align: 'center' }); y += 30; }
+    c.strokeStyle = '#c3ccd8'; c.lineWidth = 1.5; c.strokeRect(M + .75, y0 - 34 + .75, IW - 1.5, y - y0 + 34 - 1.5);
+    y += 12;
+    const tl = [['TOPLAM ODA', rows.length], ['TOPLAM KİŞİ', totK], ['GÜNLÜK TOPLAM', TL(totG)], ['GÜNLÜK ORT.', TL(rows.length ? totG / rows.length : 0)]], tbw = (IW - 30) / 4;
+    tl.forEach(([l, v], i) => { const x = M + i * (tbw + 10); box(x, y, tbw, 58, 10, '#e3eefb', '#b5cde8'); T(l, x + tbw / 2, y + 17, { size: 13, bold: true, color: '#52627a', align: 'center' }); T(v, x + tbw / 2, y + 41, { size: 24, bold: true, align: 'center' }); });
+    y += 58 + G;
+    // Ödemeler
+    T('ÖDEMELER', M, y + 14, { size: 18, bold: true }); y += 30;
+    const pw = [80, 400, 160, 150, 242], px = [M]; pw.forEach(w => px.push(px[px.length - 1] + w));
+    box(M, y, IW, 32, 8, '#1f3864');
+    ['Oda', 'Ödemeyi yapan', 'Tutar', 'Tür', 'Açıklama'].forEach((t, i) => T(t, i === 1 || i === 4 ? px[i] + 10 : px[i] + pw[i] / 2, y + 16, { size: 15, bold: true, color: '#fff', align: i === 1 || i === 4 ? 'left' : 'center' }));
+    y += 32; const py0 = y;
+    pays.forEach((p, r) => {
+      c.fillStyle = r % 2 ? '#f6f8fb' : '#fff'; c.fillRect(M, y, IW, 32);
+      [room2(p.oda), p.yapan, TL(p.tutar), p.tur, p.acik || ''].forEach((t, i) => T(t, i === 1 || i === 4 ? px[i] + 10 : px[i] + pw[i] / 2, y + 16, { size: 16, align: i === 1 || i === 4 ? 'left' : 'center', maxW: pw[i] - 16, bold: i === 0 }));
+      y += 32;
+    });
+    if (!pays.length) { T('Bu gün ödeme alınmadı', M + IW / 2, y + 16, { color: '#667085', align: 'center' }); y += 32; }
+    c.strokeStyle = '#c3ccd8'; c.lineWidth = 1.5; c.strokeRect(M + .75, py0 - 32 + .75, IW - 1.5, y - py0 + 32 - 1.5);
+    y += 10;
+    const byTur = {}; pays.forEach(p => byTur[p.tur] = (byTur[p.tur] || 0) + +p.tutar);
+    box(M, y, IW, 48, 10, '#e6f4df', '#b9dba7');
+    T('TOPLAM TAHSİLAT', M + 16, y + 24, { size: 16, bold: true });
+    T(TL(pays.reduce((t, p) => t + +p.tutar, 0)), M + 230, y + 24, { size: 24, bold: true });
+    T(Object.entries(byTur).map(([k, v]) => `${k} ${TL(v)}`).join('   ·   '), M + IW - 16, y + 24, { size: 16, align: 'right', color: '#334155', maxW: IW - 400 });
+    y += 48 + G;
+    // Yarın
+    box(M, y, IW, 82, 12, '#f1f4f9');
+    T('YARIN', M + 16, y + 18, { size: 14, bold: true, color: '#667085' });
+    T(`Gelecek: ${tmrIn.length ? tmrIn.length + ' oda (' + rl(tmrIn) + ')' : 'yok'}`, M + 16, y + 42, { size: 16, maxW: IW - 32 });
+    T(`Çıkacak: ${tmrOut.length ? tmrOut.length + ' oda (' + rl(tmrOut) + ')' : 'yok'}`, M + 16, y + 65, { size: 16, maxW: IW - 32 });
+    y += 82 + 10;
+    const now = new Date();
+    T(`Hazırlanma: ${fmt(todayISO())} ${pad(now.getHours())}:${pad(now.getMinutes())}`, W - M, y + 8, { size: 13, color: '#98a2b3', align: 'right' });
+    return y + 22 + M;
+  };
+  const H = paint(document.createElement('canvas').getContext('2d'));
+  const cv = document.createElement('canvas'); cv.width = W * K; cv.height = H * K;
+  const c = cv.getContext('2d'); c.scale(K, K); c.fillStyle = '#fff'; c.fillRect(0, 0, W, H); paint(c);
+  return cv;
+}
+
 /* ---------- Arayüz ---------- */
 let kEdit = null, oEdit = null, lastCanvas = null;
 const msg = (el, cls, html) => { el.innerHTML = html ? `<div class="msg ${cls}">${html}</div>` : ''; };
@@ -364,19 +517,37 @@ function readStay() {
     giris: $('#k-giris').value, cikis: $('#k-cikis').value, durum: $('#k-durum').value,
     tutar: $('#k-tutar').value === '' ? '' : +$('#k-tutar').value, kaynak: $('#k-kaynak').value };
 }
+function refreshRoomOptions() {
+  const g = $('#k-giris').value, e = $('#k-cikis').value, ok = validISO(g) && validISO(e) && dn(e) > dn(g);
+  [...$('#k-oda').options].forEach(o => {
+    if (!o.value) return; const n = +o.value;
+    const busy = ok && S.stays.some(x => x.id !== kEdit && x.durum !== 'İptal' && +x.oda === n && dn(x.giris) < dn(e) && dn(x.cikis) > dn(g));
+    o.disabled = busy; o.textContent = room2(n) + (busy ? ' — dolu' : '');
+  });
+}
+function syncGece(from) {
+  const g = $('#k-giris').value, e = $('#k-cikis').value, n = +$('#k-gece').value;
+  if (from === 'cikis') { if (validISO(g) && validISO(e) && dn(e) > dn(g)) $('#k-gece').value = dn(e) - dn(g); }
+  else if (validISO(g) && Number.isInteger(n) && n >= 1) $('#k-cikis').value = fromDn(dn(g) + n);
+}
 function checkStayForm() {
+  refreshRoomOptions();
   const s = readStay();
-  const touched = ['oda', 'ad', 'kisi', 'giris', 'cikis', 'tutar', 'kaynak'].some(k => s[k] !== '');
+  const touched = ['oda', 'ad', 'kisi', 'cikis', 'tutar'].some(k => s[k] !== '');
   const m = touched ? checkStay(s, kEdit) : 'Bilgileri girin';
   msg($('#k-msg'), touched && m ? 'bad' : 'ok', touched ? (m || '✔ Kayıt geçerli') : '');
   $('#k-save').disabled = !!m;
 }
-['k-oda', 'k-ad', 'k-kisi', 'k-giris', 'k-cikis', 'k-durum', 'k-tutar', 'k-kaynak'].forEach(id => $('#' + id).addEventListener('input', checkStayForm));
+['k-oda', 'k-ad', 'k-kisi', 'k-durum', 'k-tutar', 'k-kaynak'].forEach(id => $('#' + id).addEventListener('input', checkStayForm));
+$('#k-gece').addEventListener('input', () => { syncGece('gece'); checkStayForm(); });
+$('#k-cikis').addEventListener('input', () => { syncGece('cikis'); checkStayForm(); });
+$('#k-giris').addEventListener('input', () => { if ($('#k-gece').value) syncGece('gece'); else syncGece('cikis'); checkStayForm(); });
+$('#k-quick').onclick = e => { const b = e.target.closest('button'); if (!b) return; $('#k-gece').value = b.dataset.n; syncGece('gece'); checkStayForm(); };
 $('#k-giris').addEventListener('change', () => {
   const g = $('#k-giris').value;
   if (validISO(g)) {
     $('#k-cikis').min = fromDn(dn(g) + 1);
-    if (!kEdit) $('#k-durum').value = dn(g) > dn(todayISO()) || (dn(g) === dn(todayISO()) && false) ? 'Bekleniyor' : 'Geldi';
+    if (!kEdit) $('#k-durum').value = dn(g) > dn(todayISO()) ? 'Bekleniyor' : 'Geldi';
   }
   checkStayForm();
 });
@@ -384,11 +555,12 @@ $('#k-save').onclick = () => {
   const s = readStay(); if (checkStay(s, kEdit)) return;
   const i = S.stays.findIndex(x => x.id === s.id);
   if (i >= 0) S.stays[i] = s; else S.stays.push(s);
-  save(); resetStayForm(); render();
+  S.lastKaynak = s.kaynak; save(); resetStayForm(); render();
 };
 function resetStayForm() {
-  kEdit = null; ['k-oda', 'k-ad', 'k-kisi', 'k-giris', 'k-cikis', 'k-tutar', 'k-kaynak'].forEach(id => $('#' + id).value = '');
-  $('#k-durum').value = 'Geldi'; $('#k-title') ; $('#kon-title').textContent = 'Yeni konaklama'; $('#k-cancel').hidden = true; checkStayForm();
+  kEdit = null; ['k-oda', 'k-ad', 'k-kisi', 'k-cikis', 'k-gece', 'k-tutar'].forEach(id => $('#' + id).value = '');
+  $('#k-giris').value = S.date; $('#k-kaynak').value = S.set.kaynaklar.includes(S.lastKaynak) ? S.lastKaynak : '';
+  $('#k-durum').value = validISO(S.date) && dn(S.date) > dn(todayISO()) ? 'Bekleniyor' : 'Geldi'; $('#kon-title').textContent = 'Yeni konaklama'; $('#k-cancel').hidden = true; checkStayForm();
 }
 $('#k-cancel').onclick = resetStayForm;
 
@@ -432,19 +604,20 @@ function renderKon() {
     <td style="white-space:nowrap">${s.durum === 'Bekleniyor' ? `<button class="btn" data-a="geldi" data-id="${s.id}">Geldi</button><button class="btn sec" data-a="iptal" data-id="${s.id}">İptal</button>` : ''}
     <button class="btn sec" data-a="edit" data-id="${s.id}">Düzenle</button><button class="btn red" data-a="del" data-id="${s.id}">Sil</button></td></tr>`).join('') || '<tr><td colspan="9" class="small">Kayıt yok</td></tr>';
 }
-$('#k-list').onclick = e => {
-  const b = e.target.closest('button'); if (!b) return;
+function stayAct(b) {
   const s = S.stays.find(x => x.id === b.dataset.id); if (!s) return;
   if (b.dataset.a === 'geldi') { const t = { ...s, durum: 'Geldi' }; const m = checkStay(t, s.id); if (m) return alert(m); Object.assign(s, t); }
   if (b.dataset.a === 'iptal') s.durum = 'İptal';
   if (b.dataset.a === 'del') { if (!confirm(`${s.ad} (oda ${s.oda}) kaydı kalıcı silinsin mi?\nÇıkmış misafirleri silmeyin; yalnızca hatalı kayıtları silin.`)) return; S.stays = S.stays.filter(x => x !== s); }
   if (b.dataset.a === 'edit') {
     kEdit = s.id; $('#k-oda').value = s.oda; $('#k-ad').value = s.ad; $('#k-kisi').value = s.kisi; $('#k-giris').value = s.giris; $('#k-cikis').value = s.cikis;
-    $('#k-durum').value = s.durum; $('#k-tutar').value = s.tutar; $('#k-kaynak').value = s.kaynak;
+    $('#k-gece').value = dn(s.cikis) - dn(s.giris); $('#k-durum').value = s.durum; $('#k-tutar').value = s.tutar; $('#k-kaynak').value = s.kaynak;
     $('#kon-title').textContent = 'Konaklamayı düzenle'; $('#k-cancel').hidden = false; checkStayForm(); scrollTo(0, 0); return;
   }
   save(); render();
-};
+}
+$('#k-list').onclick = e => { const b = e.target.closest('button'); if (b) stayAct(b); };
+$('#quick').onclick = e => { const b = e.target.closest('button'); if (b) stayAct(b); };
 $('#k-filter').onchange = $('#k-search').oninput = renderKon;
 
 function renderOde() {
@@ -463,28 +636,44 @@ $('#o-list').onclick = e => {
 };
 $('#o-filter').onchange = renderOde;
 
+function renderQuick(R) {
+  const li = (s, btns = '') => `<li><b>${room2(s.oda)}</b> · ${esc(s.ad)} · ${s.kisi} kişi ${btns}</li>`;
+  const bt = id => `<button class="btn" data-a="geldi" data-id="${id}">Geldi</button><button class="btn sec" data-a="iptal" data-id="${id}">İptal</button>`;
+  const ul = (a, f) => a.length ? `<ul>${a.map(f).join('')}</ul>` : '<div class="small">Yok</div>';
+  $('#quick').innerHTML = `<div class="cards">
+    <div class="card"><h3>Bugün gelecekler — bekleniyor (${R.gelecek.length})</h3>${ul(R.gelecek, s => li(s, bt(s.id)))}</div>
+    <div class="card"><h3>Bugün çıkacaklar (${R.giden.length})</h3>${ul(R.giden, s => li(s))}</div></div>`;
+}
+function renderKirli(R) {
+  if (!R.bos.length) { $('#kirliBox').innerHTML = ''; return; }
+  const k = new Set(kirliOf(S.date, R));
+  $('#kirliBox').innerHTML = `<div class="card"><h3>Boş odalar: ${R.bos.length - k.size} temiz · ${k.size} kirli</h3>
+    <div class="small" style="margin-bottom:8px">Kirli olan odalara dokunun. Bugün çıkış yapan odalar otomatik kirli işaretlenir; temizlendiyse dokunup kaldırın.</div>
+    <div class="chips">${R.bos.map(o => `<button class="chip${k.has(o) ? ' dirty' : ''}" data-o="${o}">${room2(o)}</button>`).join('')}</div></div>`;
+}
+$('#kirliBox').onclick = e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  const R = compute(S.date), k = new Set(kirliOf(S.date, R)), o = +b.dataset.o;
+  k.has(o) ? k.delete(o) : k.add(o); S.kirli[S.date] = [...k]; save(); render();
+};
 function renderRapor() {
   const errs = allErrors(), date = S.date;
   let html = '', ok = true;
-  if (!validISO(date)) { html = '<div class="msg bad">Geçerli bir rapor tarihi seçin.</div>'; ok = false; }
-  else {
-    if (errs.length) { ok = false; html += `<div class="msg bad"><b>⚠ ${errs.length} hata var — düzeltmeden rapor oluşturulamaz</b><ul>${errs.map(e => `<li>${esc(e)}</li>`).join('')}</ul></div>`; }
-    const R = compute(date);
-    if (!R.consistent) { ok = false; html += '<div class="msg bad">⚠ Gün sonu oda/kişi sayısı tutmuyor — kayıtları kontrol edin.</div>'; }
-    const kir = S.kirli[date];
-    $('#kirli').max = R.bos.length;
-    if (kir == null || kir === '') { ok = false; html += '<div class="msg warn">Kirli boş oda sayısını girin (yoksa 0).</div>'; }
-    else if (kir > R.bos.length) { ok = false; html += `<div class="msg bad">Kirli oda sayısı boş oda sayısından (${R.bos.length}) fazla olamaz.</div>`; }
-    if (ok) html = '<div class="msg ok">✔ Kontroller temiz — rapor oluşturulabilir.</div>';
-    $('#sumline').textContent = `Gün başı ${R.gunBasi.length} · Gelen ${R.gelen.length} · Gelecek ${R.gelecek.length} · Giden ${R.giden.length} · Gün sonu ${R.gunSonu.length} · Boş ${R.bos.length}`;
-  }
+  $('#fmt').value = S.format;
+  if (!validISO(date)) { $('#status').innerHTML = '<div class="msg bad">Geçerli bir rapor tarihi seçin.</div>'; $('#gen').disabled = true; $('#quick').innerHTML = $('#kirliBox').innerHTML = ''; return; }
+  if (errs.length) { ok = false; html += `<div class="msg bad"><b>⚠ ${errs.length} hata var — düzeltmeden rapor oluşturulamaz</b><ul>${errs.map(e => `<li>${esc(e)}</li>`).join('')}</ul></div>`; }
+  const R = compute(date);
+  if (!R.consistent) { ok = false; html += '<div class="msg bad">⚠ Gün sonu oda/kişi sayısı tutmuyor — kayıtları kontrol edin.</div>'; }
+  if (ok) html = '<div class="msg ok">✔ Kontroller temiz — rapor oluşturulabilir.</div>';
+  $('#sumline').textContent = `Gün başı ${R.gunBasi.length} · Gelen ${R.gelen.length} · Gelecek ${R.gelecek.length} · Giden ${R.giden.length} · Gün sonu ${R.gunSonu.length} · Boş ${R.bos.length}`;
+  renderQuick(R); renderKirli(R);
   $('#status').innerHTML = html; $('#gen').disabled = !ok;
 }
-$('#kirli').oninput = () => { const v = $('#kirli').value; S.kirli[S.date] = v === '' ? null : Math.max(0, Math.floor(+v)); save(); invalidate(); renderRapor(); };
+$('#fmt').onchange = () => { S.format = $('#fmt').value; save(); };
 function invalidate() { lastCanvas = null; $('#result').innerHTML = ''; $('#actions').hidden = true; }
 $('#gen').onclick = () => {
   if (allErrors().length) return;
-  const cv = drawReport(S.date, S.kirli[S.date]); lastCanvas = cv;
+  const cv = drawReport(S.date); lastCanvas = cv;
   $('#result').innerHTML = `<img alt="Gün sonu raporu" src="${cv.toDataURL('image/png')}">`;
   $('#actions').hidden = false;
   $('#share').hidden = !(navigator.canShare && navigator.share);
@@ -498,7 +687,7 @@ $('#share').onclick = async () => {
 };
 $('#prn').onclick = () => window.print();
 
-$('#rdate').onchange = () => { S.date = $('#rdate').value; save(); resetPayForm(); invalidate(); render(); };
+$('#rdate').onchange = () => { S.date = $('#rdate').value; save(); if (!kEdit) resetStayForm(); resetPayForm(); render(); };
 
 /* Ayarlar */
 function renderAyar() { $('#a-o1').value = S.set.oda1; $('#a-o2').value = S.set.oda2; $('#a-max').value = S.set.maxKisi; $('#a-kay').value = S.set.kaynaklar.join('\n'); $('#a-tur').value = S.set.turler.join('\n'); }
@@ -519,7 +708,7 @@ $('#b-clear').onclick = () => { if (confirm('TÜM konaklama ve ödeme kayıtlar�
 $('#b-demo').onclick = () => {
   if (S.stays.length && !confirm('Mevcut veriler örnek veriyle değiştirilecek. Devam?')) return;
   const st = (oda, ad, kisi, g, sure, tutar, kaynak, durum = 'Geldi') => ({ id: uid(), oda, ad, kisi, giris: g, cikis: fromDn(dn(g) + sure), durum, tutar, kaynak });
-  S = defaults(); S.date = '2026-09-30'; S.kirli['2026-09-30'] = 1;
+  S = defaults(); S.date = '2026-09-30'; S.kirli['2026-09-30'] = [6];
   S.stays = [st(18, 'MUHAMMET SEMİH KÖSE', 4, '2026-09-13', 285, 498192, 'ÖĞRENCİ'), st(20, 'MEHMET EFE ÇELEBİ', 4, '2026-09-21', 267, 471522, 'ÖĞRENCİ'),
     st(22, 'HAYAL YAVAŞ', 4, '2026-09-16', 272, 480352, 'ÖĞRENCİ'), st(24, 'BEREN TEZSEZENER', 2, '2026-09-12', 276, 482298, 'ÖĞRENCİ'),
     st(26, 'HİLAL KIVRAK', 2, '2026-09-04', 284, 496450, 'ÖĞRENCİ'), st(29, 'EDA NUR RUŞİTLER', 2, '2026-09-13', 275, 480532, 'ÖĞRENCİ'),
@@ -534,8 +723,7 @@ $('#b-demo').onclick = () => {
 
 function render() {
   $('#rdate').value = S.date;
-  $('#kirli').value = S.kirli[S.date] ?? '';
-  renderRapor(); renderKon(); renderOde(); checkStayForm(); checkPayForm();
+    renderRapor(); renderKon(); renderOde(); checkStayForm(); checkPayForm();
 }
 function init() { fillSelects(); renderAyar(); resetStayForm(); resetPayForm(); invalidate(); render(); }
 init();
