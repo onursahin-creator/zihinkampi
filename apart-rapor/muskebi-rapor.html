@@ -48,6 +48,12 @@ h2{font-size:16px;margin:18px 0 8px;color:var(--pri)}
 <nav id="tabs"><button data-t="gir" class="on">📝 Günlük rapor</button><button data-t="ayar">⚙ Ayarlar</button></nav>
 <main>
 <section class="pane on" id="p-gir">
+  <div id="drop" class="card noprint" style="border:2px dashed #9fb0d0;text-align:center;padding:18px">
+    <div style="font-size:18px;font-weight:700">📂 Günlük forecast dosyasını buraya sürükleyin</div>
+    <div class="small" style="margin:6px 0 10px">PMS'ten alınan “Müsaitliğe göre forecast” Excel dosyası (.xlsx) — grafik, gün sonu, kişi ve gelir otomatik dolar</div>
+    <label class="btn" style="cursor:pointer">Dosya seç<input type="file" id="xl" accept=".xlsx" hidden></label>
+  </div>
+  <div id="upmsg"></div><div id="srcinfo"></div>
   <div id="hint" class="small"></div>
 
   <h2>1. Sabahki durum</h2>
@@ -57,7 +63,7 @@ h2{font-size:16px;margin:18px 0 8px;color:var(--pri)}
   </div>
   <div class="small" id="sabahnote"></div><div class="row"><button class="btn sec" id="unlock" hidden>✏ Sabahki durumu düzelt</button></div>
 
-  <h2>2. Gün içinde gerçekleşen</h2>
+  <h2>2. Gün içinde gerçekleşen <span class="small" id="gelennote"></span></h2>
   <div class="grid">
     <div class="f"><label>Gerçekleşen gelişler — oda</label><input id="f-gelenOda" type="number" min="0" step="1" inputmode="numeric"></div>
     <div class="f"><label>Gerçekleşen gelişler — kişi</label><input id="f-gelenKisi" type="number" min="0" step="1" inputmode="numeric"></div>
@@ -141,6 +147,7 @@ const longDate = iso => `${+iso.slice(8, 10)} ${MONTHS[+iso.slice(5, 7) - 1]} ${
 const shortDate = iso => `${+iso.slice(8, 10)} ${MONTHS[+iso.slice(5, 7) - 1].toLocaleUpperCase('tr-TR')}`;
 const TL = n => Number(n).toLocaleString('tr-TR', { maximumFractionDigits: 0 }) + ' ₺';
 const pct = x => (x * 100).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+const r2 = n => Math.round(n * 100) / 100;
 const num = v => (v === '' || v == null || isNaN(+v)) ? NaN : +v;
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -170,9 +177,17 @@ const blankDay = () => ({ sabahOda: '', sabahKisi: '', gelenOda: '', gelenKisi: 
 function calcDay(d) {
   const P = (a, b) => ({ o: num(a), k: num(b) });
   const sab = P(d.sabahOda, d.sabahKisi), gel = P(d.gelenOda, d.gelenKisi), ayr = P(d.ayrilanOda, d.ayrilanKisi), bg = P(d.bekGelOda, d.bekGelKisi), bc = P(d.bekCikOda, d.bekCikKisi);
-  const sd = { o: sab.o + gel.o - ayr.o, k: sab.k + gel.k - ayr.k };
-  const gs = { o: sd.o + bg.o - bc.o, k: sd.k + bg.k - bc.k };
-  return { sab, gel, ayr, bg, bc, sd, gs, gelir: num(d.gelir), kg: d.kisiGec === '' || d.kisiGec == null ? gs.k : num(d.kisiGec) };
+  const fileMode = d.gsOda !== undefined && d.gsOda !== '' && d.gsOda != null;
+  let sd, gs, ay = ayr;
+  if (fileMode) {   // gün sonu dosyadan gelir; ayrılanlar buradan türetilir
+    gs = { o: num(d.gsOda), k: num(d.gsKisi) };
+    sd = { o: gs.o - bg.o + bc.o, k: gs.k - bg.k + bc.k };
+    ay = { o: sab.o + gel.o - sd.o, k: sab.k + gel.k - sd.k };
+  } else {
+    sd = { o: sab.o + gel.o - ayr.o, k: sab.k + gel.k - ayr.k };
+    gs = { o: sd.o + bg.o - bc.o, k: sd.k + bg.k - bc.k };
+  }
+  return { sab, gel, ayr: ay, bg, bc, sd, gs, fileMode, gelir: num(d.gelir), kg: d.kisiGec === '' || d.kisiGec == null ? gs.k : num(d.kisiGec) };
 }
 function draftFrom(date) {
   const d = blankDay(), prev = S.days[fromDn(dn(date) - 1)];
@@ -198,7 +213,13 @@ function checkDay(d) {
     if (p.o > 0 && (p.k < p.o || p.k > p.o * mx)) { E.push(`${l}: ${p.o} odada ${p.k} kişi olamaz (oda başına 1–${mx} kişi)`); return false; }
     return true;
   };
-  const ok = [pair(c.sab, 'Sabahki durum'), pair(c.gel, 'Gerçekleşen gelişler'), pair(c.ayr, 'Bugün ayrılmış olanlar'), pair(c.bg, 'Beklenen gelişler'), pair(c.bc, 'Beklenen çıkışlar')].every(Boolean);
+  const inOk = [pair(c.sab, 'Sabahki durum'), pair(c.gel, 'Gerçekleşen gelişler'), pair(c.bg, 'Beklenen gelişler'), pair(c.bc, 'Beklenen çıkışlar')].every(Boolean);
+  let ayrOk = false;
+  if (inOk) {
+    if (c.fileMode && (c.ayr.o < 0 || c.ayr.k < 0)) E.push(`Dosyadaki gün sonu (${c.gs.o} oda / ${c.gs.k} kişi) ile sabahki durum ve gelişler tutmuyor: ayrılan ${c.ayr.o} oda / ${c.ayr.k} kişi çıkıyor. Sabahki durumu ve gerçekleşen gelişleri kontrol edin.`);
+    else ayrOk = pair(c.ayr, 'Bugün ayrılmış olanlar') && (!c.fileMode || pair(c.gs, 'Gün sonu (dosya)'));
+  }
+  const ok = inOk && ayrOk;
   if (ok) {
     if (c.ayr.o > c.sab.o || c.ayr.k > c.sab.k) E.push('Bugün ayrılanlar, sabahki mevcuttan fazla olamaz');
     else if (c.bc.o > c.sd.o || c.bc.k > c.sd.k) E.push('Beklenen çıkışlar şimdiki durumdan fazla olamaz');
@@ -328,6 +349,17 @@ function buildTahmin() {
   $('#tgrid').innerHTML = [...Array(8)].map((_, i) => `<div class="f"><label id="tl${i}"></label><input id="t${i}" type="number" min="0" step="1" inputmode="numeric"></div>`).join('');
   [...Array(8)].forEach((_, i) => $('#t' + i).addEventListener('input', onInput));
 }
+function fileModeOn() { return D.gsOda !== undefined && D.gsOda !== '' && D.gsOda != null; }
+function renderDerived() {
+  const fm = fileModeOn();
+  $('#f-ayrilanOda').readOnly = $('#f-ayrilanKisi').readOnly = fm;
+  if (fm) { const c = calcDay(D); $('#f-ayrilanOda').value = isNaN(c.ayr.o) ? '' : c.ayr.o; $('#f-ayrilanKisi').value = isNaN(c.ayr.k) ? '' : c.ayr.k; }
+  $('#gelennote').textContent = fm && D.file ? `(dosyada bugün gelen oda: ${D.file.gelenDosya} — kişi sayısını siz girin; ayrılanlar otomatik hesaplanır)` : '';
+  const f = D.file;
+  $('#srcinfo').innerHTML = fm && f ? `<div class="msg ok">📄 <b>${esc(f.name)}</b> okundu · gün sonu <b>${D.gsOda} oda / ${D.gsKisi} kişi</b> · kişi geceleme ${D.kisiGec} · gelir ${TL(D.gelir)} · 8 günlük tahmin dolduruldu
+    <button class="btn sec" id="rmfile" style="margin-left:8px;padding:4px 10px">Dosya verisini kaldır</button></div>` : '';
+  const rm = $('#rmfile'); if (rm) rm.onclick = () => { D.gsOda = ''; D.gsKisi = ''; D.file = null; S.days[S.date] = D; confirmed = false; save(); renderForm(); renderCalc(); };
+}
 function renderForm() {
   FIELDS.forEach(f => { $('#f-' + f).value = D[f] ?? ''; });
   const lock = D.sabahAuto;
@@ -337,12 +369,14 @@ function renderForm() {
   $('#rdate').value = S.date; $('#title').textContent = `${S.set.ad} — Günlük Doluluk Raporu`;
   const prev = S.days[fromDn(dn(S.date) - 1)];
   $('#hint').textContent = prev && prev.tahmin[0] !== '' ? `Dünkü tahmine göre bugünün gün sonu: ${prev.tahmin[0]} oda.` : '';
+  renderDerived();
 }
 function readForm() {
-  FIELDS.forEach(f => { const v = $('#f-' + f).value; D[f] = v === '' ? '' : +v; });
+  const fm = fileModeOn();
+  FIELDS.forEach(f => { if (fm && f.startsWith('ayrilan')) return; const v = $('#f-' + f).value; D[f] = v === '' ? '' : +v; });
   D.tahmin = [...Array(8)].map((_, i) => { const v = $('#t' + i).value; return v === '' ? '' : +v; });
 }
-function onInput() { readForm(); S.days[S.date] = D; confirmed = false; save(); renderCalc(); }
+function onInput() { readForm(); S.days[S.date] = D; confirmed = false; save(); renderDerived(); renderCalc(); }
 FIELDS.forEach(f => $('#f-' + f).addEventListener('input', onInput));
 $('#unlock').onclick = () => { D.sabahAuto = false; S.days[S.date] = D; save(); renderForm(); renderCalc(); };
 
@@ -423,6 +457,112 @@ $('#b-demo').onclick = () => {
     gelir: 61357, kisiGec: 18, tahmin: [27, 48, 62, 38, 14, 30, 31, 29], sabahAuto: false };
   save(); init();
 };
+
+/* ---------- Forecast (.xlsx) okuyucu ---------- */
+async function inflateRaw(u8) { const st = new Blob([u8]).stream().pipeThrough(new DecompressionStream('deflate-raw')); return new Uint8Array(await new Response(st).arrayBuffer()); }
+async function unzip(buf) {
+  const dv = new DataView(buf), u8 = new Uint8Array(buf), dec = new TextDecoder(); let e = -1;
+  for (let i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 65557); i--) if (dv.getUint32(i, true) === 0x06054b50) { e = i; break; }
+  if (e < 0) throw new Error('Geçerli bir .xlsx dosyası değil');
+  const n = dv.getUint16(e + 10, true); let p = dv.getUint32(e + 16, true); const files = {};
+  for (let i = 0; i < n; i++) {
+    if (dv.getUint32(p, true) !== 0x02014b50) throw new Error('Geçerli bir .xlsx dosyası değil');
+    const method = dv.getUint16(p + 10, true), cs = dv.getUint32(p + 20, true), nl = dv.getUint16(p + 28, true), el = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true), lo = dv.getUint32(p + 42, true);
+    const name = dec.decode(u8.subarray(p + 46, p + 46 + nl)); p += 46 + nl + el + cl;
+    if (name.endsWith('/')) continue;
+    const st = lo + 30 + dv.getUint16(lo + 26, true) + dv.getUint16(lo + 28, true);
+    files[name] = { method, data: u8.subarray(st, st + cs) };
+  }
+  return files;
+}
+async function zipText(files, name) { const f = files[name]; if (!f) return null; return new TextDecoder().decode(f.method === 0 ? f.data : await inflateRaw(f.data)); }
+async function readXlsx(buf) {
+  if (typeof DecompressionStream === 'undefined') throw new Error('Bu tarayıcı dosya okumayı desteklemiyor; Chrome veya Edge kullanın');
+  const files = await unzip(buf), xml = t => new DOMParser().parseFromString(t, 'text/xml');
+  let sheet = Object.keys(files).filter(k => /^xl\/worksheets\/sheet\d+\.xml$/.test(k)).sort()[0];
+  try {
+    const wb = xml(await zipText(files, 'xl/workbook.xml')), sh = wb.getElementsByTagName('sheet')[0];
+    const rid = sh.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id') || sh.getAttribute('r:id');
+    for (const r of xml(await zipText(files, 'xl/_rels/workbook.xml.rels')).getElementsByTagName('Relationship'))
+      if (r.getAttribute('Id') === rid) { const t = r.getAttribute('Target'); sheet = t.startsWith('/') ? t.slice(1) : 'xl/' + t.replace(/^\.\//, ''); }
+  } catch (e) { /* ilk sayfa kullanılır */ }
+  if (!files[sheet]) throw new Error('Excel dosyasında sayfa bulunamadı');
+  const shared = []; const sst = await zipText(files, 'xl/sharedStrings.xml');
+  if (sst) for (const si of xml(sst).getElementsByTagName('si')) shared.push(si.textContent);
+  const rows = [];
+  for (const c of xml(await zipText(files, sheet)).getElementsByTagName('c')) {
+    const ref = c.getAttribute('r') || '', m = ref.match(/^([A-Z]+)(\d+)$/); if (!m) continue;
+    let col = 0; for (const ch of m[1]) col = col * 26 + ch.charCodeAt(0) - 64; col--;
+    const r = +m[2] - 1, t = c.getAttribute('t'), v = c.getElementsByTagName('v')[0];
+    let val = null;
+    if (t === 'inlineStr') val = c.textContent; else if (v) val = t === 's' ? shared[+v.textContent] : (t === 'str' || t === 'b' || t === 'e') ? v.textContent : parseFloat(v.textContent);
+    (rows[r] = rows[r] || [])[col] = val;
+  }
+  return rows;
+}
+const TRM = { oca: 1, şub: 2, mar: 3, nis: 4, may: 5, haz: 6, tem: 7, ağu: 8, eyl: 9, eki: 10, kas: 11, ara: 12 };
+function parseTrDate(v) {
+  if (typeof v === 'number' && v > 40000 && v < 80000) return fromDn(Math.round(v) - 25569);
+  const s = String(v ?? '').trim(); let m;
+  if ((m = s.match(/^(\d{4})-(\d{2})-(\d{2})/)) && validISO(m[0])) return m[0];
+  if ((m = s.match(/^(\d{1,2})\s+(\p{L}{3})\p{L}*\s+(\d{4})/u)) && TRM[m[2].toLocaleLowerCase('tr-TR')]) return `${m[3]}-${pad(TRM[m[2].toLocaleLowerCase('tr-TR')])}-${pad(+m[1])}`;
+  if ((m = s.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})/))) { const iso = `${m[3]}-${pad(+m[2])}-${pad(+m[1])}`; return validISO(iso) ? iso : null; }
+  return null;
+}
+const norm = s => String(s ?? '').toLocaleLowerCase('tr-TR').replace(/[^a-z0-9çğıöşü]/g, '');
+const numVal = v => typeof v === 'number' ? v : (v == null || String(v).trim() === '' ? NaN : parseFloat(String(v).replace(/\./g, '').replace(',', '.')));
+const COLS = { tarih: ['tarih'], dolu: ['doluoda'], cap: ['odakapasite'], yet: ['yetişkin', 'yetiskin'], coc: ['çocuk', 'cocuk'], beb: ['bebek'], top: ['toplamkişi', 'toplamkisi'], gelir: ['odageliri'], gelen: ['gelenoda'], grup: ['grupodası', 'grupodasi'] };
+const COLH = { tarih: 'Tarih', dolu: 'Dolu Oda', cap: 'Oda Kapasite', yet: 'Yetişkin', coc: 'Çocuk', beb: 'Bebek', top: 'Toplam Kişi', gelir: 'Oda Geliri', gelen: 'Gelen Oda' };
+function parseForecast(rows, fileName) {
+  const E = [], W = [], head = (rows[0] || []).map(norm), ci = {};
+  for (const [k, alts] of Object.entries(COLS)) ci[k] = head.findIndex(h => alts.includes(h));
+  const missing = ['tarih', 'dolu', 'cap', 'yet', 'coc', 'beb', 'top', 'gelir', 'gelen'].filter(k => ci[k] < 0);
+  if (missing.length) return { E: [`Bu bir forecast dosyası gibi görünmüyor; eksik sütunlar: ${missing.map(k => COLH[k]).join(', ')}. "Müsaitliğe göre forecast" dosyasını yükleyin.`] };
+  const out = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i] || [], iso = parseTrDate(r[ci.tarih]); if (!iso) break;
+    out.push({ iso, dolu: numVal(r[ci.dolu]), cap: numVal(r[ci.cap]), yet: numVal(r[ci.yet]), coc: numVal(r[ci.coc]), beb: numVal(r[ci.beb]), top: numVal(r[ci.top]), gelir: numVal(r[ci.gelir]), gelen: numVal(r[ci.gelen]), grup: ci.grup >= 0 ? numVal(r[ci.grup]) : 0 });
+  }
+  if (out.length < 9) return { E: [`Dosyada ${out.length} günlük veri var; bugün + 8 gün (9 satır) olmalı.`] };
+  const rs = out.slice(0, 9);
+  for (let i = 1; i < 9; i++) if (dn(rs[i].iso) !== dn(rs[0].iso) + i) E.push(`Tarihler ardışık değil (${fmt(rs[i - 1].iso)} → ${fmt(rs[i].iso)})`);
+  rs.forEach(r => {
+    const l = fmt(r.iso);
+    if (![r.dolu, r.cap, r.yet, r.coc, r.beb, r.top, r.gelir, r.gelen].every(Number.isFinite)) E.push(`${l}: sayısal değerler okunamadı`);
+    else if (r.dolu < 0 || r.dolu > r.cap) E.push(`${l}: dolu oda (${r.dolu}) kapasiteyi (${r.cap}) aşıyor`);
+    else if (r.top !== r.yet + r.coc + r.beb) W.push(`${l}: toplam kişi (${r.top}) yetişkin+çocuk+bebek (${r.yet + r.coc + r.beb}) toplamıyla aynı değil`);
+  });
+  const r0 = rs[0];
+  if (!E.length && r0.dolu > 0 && !(r0.gelir > 0)) E.push(`${fmt(r0.iso)}: dolu oda var ama oda geliri 0 görünüyor`);
+  if (!E.length && r0.cap !== S.set.oda) W.push(`Dosyadaki oda kapasitesi (${r0.cap}) Ayarlar'daki toplam odadan (${S.set.oda}) farklı; yüzdeler Ayarlar'a göre hesaplanır`);
+  const fm = String(fileName).match(/(\d{4}-\d{2}-\d{2})/);
+  if (fm && fm[1] !== r0.iso) W.push(`Dosya adındaki tarih (${fmt(fm[1])}) ile ilk gün (${fmt(r0.iso)}) farklı`);
+  return { E, W, rows: rs };
+}
+function applyForecast(rows, name) {
+  const r0 = rows[0]; S.date = r0.iso; loadDay();
+  D.gsOda = r0.dolu; D.gsKisi = r0.top; D.kisiGec = r0.yet + r0.coc; D.gelir = r2(r0.gelir);
+  D.tahmin = rows.slice(1, 9).map(r => r.dolu);
+  if (D.gelenOda === '' || D.gelenOda == null) D.gelenOda = r0.gelen;
+  D.file = { name, at: Date.now(), gelenDosya: r0.gelen, bebek: r0.beb, grup: r0.grup };
+  S.days[S.date] = D; confirmed = false; save(); renderForm(); renderCalc();
+}
+async function handleFile(file) {
+  const box = $('#upmsg'); box.innerHTML = '';
+  if (!file) return;
+  if (!/\.xlsx$/i.test(file.name)) { box.innerHTML = '<div class="msg bad">Yalnızca .xlsx (Excel) dosyası yüklenebilir.</div>'; return; }
+  try {
+    const res = parseForecast(await readXlsx(await file.arrayBuffer()), file.name);
+    if (res.E.length) { box.innerHTML = `<div class="msg bad"><b>Dosya okunamadı:</b><ul>${res.E.map(e => `<li>${esc(e)}</li>`).join('')}</ul></div>`; return; }
+    applyForecast(res.rows, file.name);
+    box.innerHTML = `<div class="msg ok">✔ ${fmt(res.rows[0].iso)} tarihli forecast okundu; rapor tarihi buna ayarlandı. Kalan alanları aşağıda tamamlayın.</div>` + res.W.map(w => `<div class="msg warn">⚠ ${esc(w)}</div>`).join('');
+  } catch (e) { box.innerHTML = `<div class="msg bad">Dosya okunamadı: ${esc(e.message || e)}</div>`; }
+}
+$('#xl').onchange = e => { handleFile(e.target.files[0]); e.target.value = ''; };
+['dragover', 'dragenter'].forEach(ev => $('#drop').addEventListener(ev, e => { e.preventDefault(); $('#drop').style.background = '#eef3ff'; }));
+['dragleave', 'drop'].forEach(ev => $('#drop').addEventListener(ev, e => { e.preventDefault(); $('#drop').style.background = ''; }));
+$('#drop').addEventListener('drop', e => handleFile(e.dataTransfer.files[0]));
+
 document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
   document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x === b));
   document.querySelectorAll('.pane').forEach(p => p.classList.toggle('on', p.id === 'p-' + b.dataset.t));

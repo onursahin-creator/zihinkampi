@@ -4,7 +4,24 @@ Mevcut günlük rapor (9 günlük doluluk grafiği + "Şimdiki durum" ve "Dolulu
 
 Dosyalar: `muskebi-rapor.html` (boş uygulama), `ORNEK_Muskebi_Gunluk_Rapor_30.09.2026.html` (30.09.2026 verisi girili), `ORNEK_Muskebi_Rapor_30.09.2026.png` (örnek çıktı).
 
-## Her gün girilenler
+## En kolay yol: forecast dosyasını yükleyin
+PMS'ten alınan **"Müsaitliğe göre forecast" (.xlsx)** dosyasını sayfanın üstündeki **📂 yükleme alanına sürükleyin** (veya "Dosya seç"). Dosyadan otomatik okunanlar:
+- Rapor tarihi (dosyadaki ilk gün) ve **8 günlük dolu oda tahmini** (grafik)
+- **Gün sonu**: Dolu Oda ve Toplam Kişi · **Kişi geceleme**: Yetişkin + Çocuk (bebek hariç) · **Günlük gelir**: Oda Geliri
+- Dosyadaki "Gelen Oda" değeri, "Gerçekleşen gelişler — oda" alanına önerilir
+
+Resepsiyonun elle girdikleri (en fazla 2 alan):
+- **Sabahki durum** (oda/kişi): dünkü kayıt varsa otomatik gelir; ilk gün bir kez elle girilir.
+- **Gerçekleşen gelişler — kişi sayısı** (dosyada kişi sayısı yok).
+- Gün içi rapor gönderiliyorsa **beklenen gelişler/çıkışlar** (yoksa 0).
+**Bugün ayrılmış olanlar otomatik hesaplanır**: sabah + gelen − gün sonu. Sonuç mantıksız çıkarsa (ör. negatif ayrılan) sistem hata verir.
+
+Dosya kontrolleri: .xlsx olmayan dosya, forecast olmayan dosya (sütun adları), 9 günden az satır, ardışık olmayan tarih, kapasiteyi aşan dolu oda, oda varken gelir 0 reddedilir. Dosya adındaki tarih ile ilk gün farklıysa, toplam kişi ≠ yetişkin+çocuk+bebek ise veya kapasite Ayarlar'dan farklıysa uyarı verir. Aynı gün için dosya yeniden yüklenirse (ör. sabah ve akşam) dosya kaynaklı değerler güncellenir, elle girilenler korunur.
+
+Ardından **"Rakamları kontrol ettim, doğru"** → **📄 Rapor Oluştur** → PNG indir/paylaş → **💾 Günün dosyasını kaydet**. Ertesi gün yeni dosyayı yüklemek yeterlidir; sabahki durum dünkü kayıttan gelir.
+
+## Elle giriş (dosya yoksa)
+### Her gün girilenler
 1. **Sabahki durum** (oda/kişi): dünkü gün sonundan otomatik gelir.
 2. **Gerçekleşen gelişler** ve **bugün ayrılmış olanlar** (oda/kişi).
 3. **Beklenen gelişler/çıkışlar** (yoksa 0).
@@ -25,6 +42,7 @@ Eksik alan, tam sayı olmayan veya negatif değer, kapasiteyi (166 oda) aşan od
 
 ## Varsayımlar (lütfen doğrulayın)
 - 166 oda / 332 yatak: örnek raporun yüzdelerinden çıkarıldı (11/166 = %6,63; 18/332 = %5,42). Ayarlar'dan değiştirilir.
-- Örnekte gün sonu 19 kişi, kişi geceleme 18 görünüyor; kişi geceleme ayrı alan olarak bırakıldı (ör. ücretsiz çocuk).
+- Örnek raporda gün sonu 19 kişi, kişi geceleme 18 idi. Forecast dosyasında Yetişkin+Çocuk ve Bebek ayrı sütunlar olduğundan, kişi geceleme = Yetişkin + Çocuk (bebek hariç) varsayıldı. 30.09 dosyasıyla doğrulanmadı.
+- Dosyadaki "Gelen Oda" bugünkü toplam gelen oda sayısı varsayıldı (gün sonu alınan dosyada tamamı gerçekleşmiş sayılır). Dosya sabah alınıyorsa gelmemiş olanlar "Beklenen gelişler" alanına taşınmalıdır.
 - Olağan ort. oda fiyatı aralığı 1.500–30.000 ₺ varsayıldı.
 - Tahminler elle girilir. Rezervasyon sisteminden (PMS) otomatik alınması için örnek bir dışa aktarım dosyası gerekir.
