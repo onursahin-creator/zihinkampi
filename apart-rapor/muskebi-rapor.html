@@ -71,13 +71,14 @@ h2{font-size:16px;margin:18px 0 8px;color:var(--pri)}
     <div class="f"><label>Bugün ayrılmış olanlar — kişi</label><input id="f-ayrilanKisi" type="number" min="0" step="1" inputmode="numeric"></div>
   </div>
 
-  <h2>3. Gün sonuna kadar beklenen <span class="small">(yoksa 0)</span></h2>
+  <details id="bek" style="margin-top:14px"><summary style="cursor:pointer;color:var(--pri);font-weight:700">3. Gün içi rapor için beklenenler <span class="small">(gün sonu dosyasıyla gerekmez; yoksa 0)</span></summary>
   <div class="grid">
     <div class="f"><label>Beklenen gelişler — oda</label><input id="f-bekGelOda" type="number" min="0" step="1" inputmode="numeric"></div>
     <div class="f"><label>Beklenen gelişler — kişi</label><input id="f-bekGelKisi" type="number" min="0" step="1" inputmode="numeric"></div>
     <div class="f"><label>Beklenen çıkışlar — oda</label><input id="f-bekCikOda" type="number" min="0" step="1" inputmode="numeric"></div>
     <div class="f"><label>Beklenen çıkışlar — kişi</label><input id="f-bekCikKisi" type="number" min="0" step="1" inputmode="numeric"></div>
   </div>
+  </details>
 
   <h2>4. Gelir</h2>
   <div class="grid">
@@ -206,7 +207,7 @@ function syncSabah() {
 function checkDay(d) {
   const c = calcDay(d), E = [], W = [], cap = S.set.oda, mx = S.set.maxKisiOda;
   const pair = (p, l) => {
-    if (isNaN(p.o) || isNaN(p.k)) { E.push(`${l}: oda ve kişi sayısı girilmeli`); return false; }
+    if (isNaN(p.o) || isNaN(p.k)) { E.push(`${l}: ${isNaN(p.o) && isNaN(p.k) ? 'oda ve kişi sayısı' : isNaN(p.o) ? 'oda sayısı' : 'kişi sayısı'} girilmeli`); return false; }
     if (!Number.isInteger(p.o) || !Number.isInteger(p.k) || p.o < 0 || p.k < 0) { E.push(`${l}: tam ve negatif olmayan sayı olmalı`); return false; }
     if (p.o > cap) { E.push(`${l}: oda sayısı kapasiteyi (${cap}) aşıyor`); return false; }
     if (p.o === 0 && p.k !== 0) { E.push(`${l}: oda 0 iken kişi 0 olmalı`); return false; }
@@ -354,7 +355,9 @@ function renderDerived() {
   const fm = fileModeOn();
   $('#f-ayrilanOda').readOnly = $('#f-ayrilanKisi').readOnly = fm;
   if (fm) { const c = calcDay(D); $('#f-ayrilanOda').value = isNaN(c.ayr.o) ? '' : c.ayr.o; $('#f-ayrilanKisi').value = isNaN(c.ayr.k) ? '' : c.ayr.k; }
-  $('#gelennote').textContent = fm && D.file ? `(dosyada bugün gelen oda: ${D.file.gelenDosya} — kişi sayısını siz girin; ayrılanlar otomatik hesaplanır)` : '';
+  $('#gelennote').textContent = fm && D.file ? '(gelen oda dosyadan geldi — yalnızca gelenlerin kişi sayısını girin; ayrılanlar otomatik hesaplanır)' : '';
+  $('#f-gelenOda').readOnly = fm && !!D.file;
+  const bk = [D.bekGelOda, D.bekGelKisi, D.bekCikOda, D.bekCikKisi].some(v => +v > 0); $('#bek').open = !fm || bk;
   const f = D.file;
   $('#srcinfo').innerHTML = fm && f ? `<div class="msg ok">📄 <b>${esc(f.name)}</b> okundu · gün sonu <b>${D.gsOda} oda / ${D.gsKisi} kişi</b> · kişi geceleme ${D.kisiGec} · gelir ${TL(D.gelir)} · 8 günlük tahmin dolduruldu
     <button class="btn sec" id="rmfile" style="margin-left:8px;padding:4px 10px">Dosya verisini kaldır</button></div>` : '';
@@ -543,7 +546,8 @@ function applyForecast(rows, name) {
   const r0 = rows[0]; S.date = r0.iso; loadDay();
   D.gsOda = r0.dolu; D.gsKisi = r0.top; D.kisiGec = r0.yet + r0.coc; D.gelir = r2(r0.gelir);
   D.tahmin = rows.slice(1, 9).map(r => r.dolu);
-  if (D.gelenOda === '' || D.gelenOda == null) D.gelenOda = r0.gelen;
+  D.gelenOda = r0.gelen;   // dosya gün sonunda alınır: tüm gelişler gerçekleşmiş sayılır
+  D.bekGelOda = D.bekGelKisi = D.bekCikOda = D.bekCikKisi = 0;
   D.file = { name, at: Date.now(), gelenDosya: r0.gelen, bebek: r0.beb, grup: r0.grup };
   S.days[S.date] = D; confirmed = false; save(); renderForm(); renderCalc();
 }
