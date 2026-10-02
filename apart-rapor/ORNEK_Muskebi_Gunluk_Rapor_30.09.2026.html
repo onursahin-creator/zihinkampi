@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="tr"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Club Müskebi Günlük Rapor</title>
+<style>
+:root{--bg:#f3f5f9;--card:#fff;--ink:#1b2430;--mut:#667085;--line:#d5dbe5;--pri:#1f3864;--ok:#1d7a3a;--okbg:#e3f4e8;--bad:#b42318;--badbg:#fde8e6;--warn:#b54708;--warnbg:#fff1dd}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:15px}
+header{background:var(--pri);color:#fff;padding:10px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;position:sticky;top:0;z-index:5}
+header h1{font-size:17px;margin:0;flex:1 1 auto}
+header label{font-size:13px;display:flex;gap:8px;align-items:center}
+header input{font-size:15px;padding:5px 8px;border-radius:6px;border:0}
+nav{display:flex;gap:4px;padding:8px 12px 0;overflow-x:auto}
+nav button{border:0;background:#e3e8f1;padding:10px 16px;border-radius:8px 8px 0 0;font-size:15px;cursor:pointer;color:var(--ink);white-space:nowrap}
+nav button.on{background:var(--card);font-weight:700;color:var(--pri)}
+main{background:var(--card);margin:0 12px 24px;padding:16px;border-radius:0 8px 8px 8px;box-shadow:0 1px 3px #0002;max-width:1000px}
+@media(min-width:1030px){main{margin:0 auto 24px}nav{max-width:1000px;margin:0 auto}}
+.pane{display:none}.pane.on{display:block}
+h2{font-size:16px;margin:18px 0 8px;color:var(--pri)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:6px}
+.f label{display:block;font-size:12px;color:var(--mut);margin-bottom:3px}
+.f input{width:100%;font:inherit;padding:9px;border:1px solid var(--line);border-radius:6px;background:#fffdf3}
+.f input[readonly]{background:#eef1f5}
+.btn{font:inherit;border:0;border-radius:8px;padding:10px 16px;cursor:pointer;background:var(--pri);color:#fff}
+.btn.sec{background:#e3e8f1;color:var(--ink)}.btn.red{background:var(--bad)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.big{font-size:18px;padding:14px 26px;background:var(--ok)}
+.msg{padding:9px 12px;border-radius:8px;margin:8px 0;font-size:14px}
+.msg.ok{background:var(--okbg);color:var(--ok)}.msg.bad{background:var(--badbg);color:var(--bad)}.msg.warn{background:var(--warnbg);color:var(--warn)}
+.msg ul{margin:4px 0 0 18px;padding:0}
+.card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:10px 0}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0}
+.small{font-size:12px;color:var(--mut)}
+#result img{max-width:100%;border:1px solid var(--line);margin-top:12px;background:#fff}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin:8px 0}
+.sum div{background:#f1f4f9;border-radius:8px;padding:8px 10px;font-size:13px;color:var(--mut)}
+.sum b{display:block;font-size:18px;color:var(--ink)}
+@media print{header,nav,.noprint,.pane:not(#p-gir){display:none!important}main{box-shadow:none;margin:0;padding:0}#p-gir>*:not(#result){display:none!important}#result img{border:0;width:100%}}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">Club Müskebi — Günlük Doluluk Raporu</h1>
+  <label>Rapor tarihi <input type="date" id="rdate" required=""></label>
+</header>
+<nav id="tabs"><button data-t="gir" class="on">📝 Günlük rapor</button><button data-t="ayar">⚙ Ayarlar</button></nav>
+<main>
+<section class="pane on" id="p-gir">
+  <div id="hint" class="small"></div>
+
+  <h2>1. Sabahki durum</h2>
+  <div class="grid">
+    <div class="f"><label>Oda</label><input id="f-sabahOda" type="number" min="0" step="1" inputmode="numeric"></div>
+    <div class="f"><label>Kişi</label><input id="f-sabahKisi" type="number" min="0" step="1" inputmode="numeric"></div>
+  </div>
+  <div class="small" id="sabahnote"></div><div class="row"><button class="btn sec" id="unlock" hidden="">✏ Sabahki durumu düzelt</button></div>
+
+  <h2>2. Gün içinde gerçekleşen</h2>
+  <div class="grid">
+    <div class="f"><label>Gerçekleşen gelişler — oda</label><input id="f-gelenOda" type="number" min="0" step="1" inputmode="numeric"></div>
+    <div class="f"><label>Gerçekleşen gelişler — kişi</label><input id="f-gelenKisi" type="number" min="0" step="1" inputmode="numeric"></div>
+    <div class="f"><label>Bugün ayrılmış olanlar — oda</label><input id="f-ayrilanOda" type="number" min="0" step="1" inputmode="numeric"></div>
+    <div class="f"><label>Bugün ayrılmış olanlar — kişi</label><input id="f-ayrilanKisi" type="number" min="0" step="1" inputmode="numeric"></div>
+  </div>
+
+  <h2>3. Gün sonuna kadar beklenen <span class="small">(yoksa 0)</span></h2>
+  <div class="grid">
+    <div class="f"><label>Beklenen gelişler — oda</label><input id="f-bekGelOda" type="number" min="0" step="1" inputmode="numeric"></div>
+    <div class="f"><label>Beklenen gelişler — kişi</label><input id="f-bekGelKisi" type="number" min="0" step="1" inputmode="numeric"></div>
+    <div class="f"><label>Beklenen çıkışlar — oda</label><input id="f-bekCikOda" type="number" min="0" step="1" inputmode="numeric"></div>
+    <div class="f"><label>Beklenen çıkışlar — kişi</label><input id="f-bekCikKisi" type="number" min="0" step="1" inputmode="numeric"></div>
+  </div>
+
+  <h2>4. Gelir</h2>
+  <div class="grid">
+    <div class="f"><label>Günlük gelir (₺)</label><input id="f-gelir" type="number" min="0" step="0.01" inputmode="decimal"></div>
+    <div class="f"><label>Kişi geceleme (boşsa gün sonu kişi sayısı)</label><input id="f-kisiGec" type="number" min="0" step="1" inputmode="numeric"></div>
+  </div>
+
+  <h2>5. Önümüzdeki 8 gün — dolu oda sayısı <span class="small">(rezervasyon durumuna göre)</span></h2>
+  <div class="grid" id="tgrid"></div>
+
+  <div id="calc"></div>
+  <div class="row noprint">
+    <button class="btn big" id="gen">📄 Rapor Oluştur</button>
+    <button class="btn" id="nextday">📅 Yeni güne geç</button>
+    <button class="btn sec" id="savefile">💾 Günün dosyasını kaydet</button>
+  </div>
+  <div id="dirtymsg"></div>
+  <div id="result"></div>
+  <div class="row noprint" id="actions" hidden="">
+    <button class="btn" id="dl">⬇ PNG olarak indir</button>
+    <button class="btn" id="share" hidden="">📤 Paylaş (WhatsApp vb.)</button>
+    <button class="btn sec" id="prn">🖨 Yazdır / PDF</button>
+  </div>
+</section>
+
+<section class="pane" id="p-ayar">
+  <h2>Ayarlar</h2>
+  <div class="grid">
+    <div class="f"><label>Tesis adı</label><input id="a-ad"></div>
+    <div class="f"><label>Toplam oda sayısı</label><input id="a-oda" type="number" min="1" step="1"></div>
+    <div class="f"><label>Toplam yatak sayısı</label><input id="a-yatak" type="number" min="1" step="1"></div>
+    <div class="f"><label>Odada azami kişi</label><input id="a-max" type="number" min="1" step="1"></div>
+    <div class="f"><label>Olağan ort. oda fiyatı — alt (₺)</label><input id="a-fmin" type="number" min="0" step="1"></div>
+    <div class="f"><label>Olağan ort. oda fiyatı — üst (₺)</label><input id="a-fmax" type="number" min="1" step="1"></div>
+  </div>
+  <div id="a-msg"></div>
+  <div class="row"><button class="btn" id="a-save">Ayarları kaydet</button></div>
+  <p class="small">Oda ve yatak sayıları rapordaki yüzdelerin paydasıdır (ör. 11 / 166 = %6,63; 18 / 332 = %5,42). Örnek rapordaki yüzdelerden çıkarılmıştır; lütfen doğrulayın.</p>
+  <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+  <h2>Veri</h2>
+  <p class="small">Veriler bu cihazın tarayıcısında ve kaydedilen gün dosyasında saklanır.</p>
+  <div class="row">
+    <button class="btn sec" id="b-exp">⬇ Yedek al (JSON)</button>
+    <label class="btn sec" style="cursor:pointer">⬆ Yedeği yükle<input type="file" id="b-imp" accept=".json,application/json" hidden=""></label>
+    <button class="btn sec" id="b-demo">Örnek veriyi yükle (30.09.2026)</button>
+    <button class="btn red" id="b-clear">Tüm verileri sil</button>
+  </div>
+</section>
+</main>
+
+<script id="seed" type="application/json">{"id":"5u1n77aiu9bpq7uhlx78w","savedAt":1790925861741,"data":{"ver":1,"date":"2026-09-30","days":{"2026-09-30":{"sabahOda":19,"sabahKisi":34,"gelenOda":1,"gelenKisi":3,"ayrilanOda":9,"ayrilanKisi":18,"bekGelOda":0,"bekGelKisi":0,"bekCikOda":0,"bekCikKisi":0,"gelir":61357,"kisiGec":18,"tahmin":[27,48,62,38,14,30,31,29],"sabahAuto":false}},"set":{"ad":"CLUB MÜSKEBİ","oda":166,"yatak":332,"maxKisiOda":4,"fiyatMin":1500,"fiyatMax":30000},"chain":"5u1n77aiu9bpq7uhlx78w"}}</script>
+<script>
+'use strict';
+const ORIGINAL = '<!doctype html>\n' + document.documentElement.outerHTML;  // gün dosyası kaydı için ham sayfa
+const $ = s => document.querySelector(s);
+const pad = n => String(n).padStart(2, '0');
+const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+const validISO = s => /^\d{4}-\d{2}-\d{2}$/.test(s || '') && !isNaN(Date.parse(s)) && +s.slice(0, 4) >= 2020 && +s.slice(0, 4) <= 2100;
+const dn = s => Math.round(Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10)) / 864e5);
+const fromDn = n => { const d = new Date(n * 864e5); return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`; };
+const fmt = s => s ? `${s.slice(8, 10)}.${s.slice(5, 7)}.${s.slice(0, 4)}` : '';
+const MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+const DAYS = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+const DAYS3 = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
+const dow = iso => new Date(dn(iso) * 864e5).getUTCDay();
+const longDate = iso => `${+iso.slice(8, 10)} ${MONTHS[+iso.slice(5, 7) - 1]} ${iso.slice(0, 4)} ${DAYS[dow(iso)]}`;
+const shortDate = iso => `${+iso.slice(8, 10)} ${MONTHS[+iso.slice(5, 7) - 1].toLocaleUpperCase('tr-TR')}`;
+const TL = n => Number(n).toLocaleString('tr-TR', { maximumFractionDigits: 0 }) + ' ₺';
+const pct = x => (x * 100).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+const num = v => (v === '' || v == null || isNaN(+v)) ? NaN : +v;
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+const defaults = () => ({ ver: 1, date: todayISO(), days: {},
+  set: { ad: 'CLUB MÜSKEBİ', oda: 166, yatak: 332, maxKisiOda: 4, fiyatMin: 1500, fiyatMax: 30000 } });
+let SEED = null; try { SEED = JSON.parse(document.getElementById('seed').textContent); } catch (e) { /* gömülü veri yok */ }
+const CHAIN = SEED && SEED.id ? SEED.id : 'default';
+const LSK = 'muskebiRapor.v1.' + CHAIN;
+function loadState() {
+  let ls = null; try { ls = JSON.parse(localStorage.getItem(LSK) || 'null'); } catch (e) { /* boş */ }
+  let src = null;
+  if (ls && (!SEED || (ls.savedAt || 0) >= (SEED.savedAt || 0))) src = ls.data;   // tarayıcıdaki daha yeniyse onu kullan
+  else if (SEED && SEED.data) src = SEED.data;
+  const st = Object.assign(defaults(), src || {});
+  st.set = Object.assign(defaults().set, st.set || {});
+  return st;
+}
+let S = loadState();
+let dirty = false, lastCanvas = null, D = null;
+const save = () => { dirty = true; invalidate(); try { localStorage.setItem(LSK, JSON.stringify({ savedAt: Date.now(), data: S })); } catch (e) { alert('Veri kaydedilemedi: tarayıcı depolaması kapalı olabilir.'); } };
+window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+const iso = k => fromDn(dn(S.date) + k);
+
+/* ---------- Gün kaydı ---------- */
+const blankDay = () => ({ sabahOda: '', sabahKisi: '', gelenOda: '', gelenKisi: '', ayrilanOda: '', ayrilanKisi: '',
+  bekGelOda: 0, bekGelKisi: 0, bekCikOda: 0, bekCikKisi: 0, gelir: '', kisiGec: '', tahmin: ['', '', '', '', '', '', '', ''], sabahAuto: false });
+function calcDay(d) {
+  const P = (a, b) => ({ o: num(a), k: num(b) });
+  const sab = P(d.sabahOda, d.sabahKisi), gel = P(d.gelenOda, d.gelenKisi), ayr = P(d.ayrilanOda, d.ayrilanKisi), bg = P(d.bekGelOda, d.bekGelKisi), bc = P(d.bekCikOda, d.bekCikKisi);
+  const sd = { o: sab.o + gel.o - ayr.o, k: sab.k + gel.k - ayr.k };
+  const gs = { o: sd.o + bg.o - bc.o, k: sd.k + bg.k - bc.k };
+  return { sab, gel, ayr, bg, bc, sd, gs, gelir: num(d.gelir), kg: d.kisiGec === '' || d.kisiGec == null ? gs.k : num(d.kisiGec) };
+}
+function draftFrom(date) {
+  const d = blankDay(), prev = S.days[fromDn(dn(date) - 1)];
+  if (prev) {
+    const pc = calcDay(prev);
+    if (!isNaN(pc.gs.o) && !isNaN(pc.gs.k)) { d.sabahOda = pc.gs.o; d.sabahKisi = pc.gs.k; d.sabahAuto = true; }
+    d.tahmin = prev.tahmin.slice(1).concat(['']);
+  }
+  return d;
+}
+function loadDay() { D = S.days[S.date] || draftFrom(S.date); if (D.sabahAuto) syncSabah(); }
+function syncSabah() {
+  const prev = S.days[fromDn(dn(S.date) - 1)]; if (!prev) return;
+  const pc = calcDay(prev); if (!isNaN(pc.gs.o)) { D.sabahOda = pc.gs.o; D.sabahKisi = pc.gs.k; }
+}
+function checkDay(d) {
+  const c = calcDay(d), E = [], W = [], cap = S.set.oda, mx = S.set.maxKisiOda;
+  const pair = (p, l) => {
+    if (isNaN(p.o) || isNaN(p.k)) { E.push(`${l}: oda ve kişi sayısı girilmeli`); return false; }
+    if (!Number.isInteger(p.o) || !Number.isInteger(p.k) || p.o < 0 || p.k < 0) { E.push(`${l}: tam ve negatif olmayan sayı olmalı`); return false; }
+    if (p.o > cap) { E.push(`${l}: oda sayısı kapasiteyi (${cap}) aşıyor`); return false; }
+    if (p.o === 0 && p.k !== 0) { E.push(`${l}: oda 0 iken kişi 0 olmalı`); return false; }
+    if (p.o > 0 && (p.k < p.o || p.k > p.o * mx)) { E.push(`${l}: ${p.o} odada ${p.k} kişi olamaz (oda başına 1–${mx} kişi)`); return false; }
+    return true;
+  };
+  const ok = [pair(c.sab, 'Sabahki durum'), pair(c.gel, 'Gerçekleşen gelişler'), pair(c.ayr, 'Bugün ayrılmış olanlar'), pair(c.bg, 'Beklenen gelişler'), pair(c.bc, 'Beklenen çıkışlar')].every(Boolean);
+  if (ok) {
+    if (c.ayr.o > c.sab.o || c.ayr.k > c.sab.k) E.push('Bugün ayrılanlar, sabahki mevcuttan fazla olamaz');
+    else if (c.bc.o > c.sd.o || c.bc.k > c.sd.k) E.push('Beklenen çıkışlar şimdiki durumdan fazla olamaz');
+    else {
+      if (c.gs.o > cap) E.push(`Gün sonu oda sayısı kapasiteyi (${cap}) aşıyor`);
+      if (c.sd.o > 0 && (c.sd.k < c.sd.o || c.sd.k > c.sd.o * mx)) E.push('Şimdiki durumdaki kişi sayısı oda sayısıyla uyumsuz');
+      if (c.gs.o > 0 && (c.gs.k < c.gs.o || c.gs.k > c.gs.o * mx)) E.push('Gün sonu kişi sayısı oda sayısıyla uyumsuz');
+    }
+  }
+  if (isNaN(c.gelir) || c.gelir < 0) E.push('Günlük gelir girilmeli');
+  else if (ok && c.gs.o > 0 && c.gelir === 0) E.push('Gün sonu odası var; günlük gelir 0 olamaz');
+  if (d.kisiGec !== '' && d.kisiGec != null && (!Number.isInteger(c.kg) || c.kg < 0 || (ok && c.kg > c.gs.k))) E.push('Kişi geceleme, gün sonu kişi sayısından fazla olamaz');
+  d.tahmin.forEach((v, i) => {
+    const n = num(v), l = shortDate(iso(i + 1));
+    if (isNaN(n)) E.push(`Tahmin eksik: ${l}`); else if (!Number.isInteger(n) || n < 0 || n > cap) E.push(`Tahmin geçersiz (${l}): 0–${cap} arası tam sayı olmalı`);
+  });
+  if (ok && !E.length) {
+    const ort = c.gelir / c.gs.o;
+    if (c.gs.o > 0 && (ort < S.set.fiyatMin || ort > S.set.fiyatMax)) W.push(`Ortalama oda fiyatı ${TL(ort)} olağan aralığın (${TL(S.set.fiyatMin)} – ${TL(S.set.fiyatMax)}) dışında`);
+  }
+  const prev = S.days[fromDn(dn(S.date) - 1)];
+  if (prev && ok) { const pc = calcDay(prev); if (!isNaN(pc.gs.o) && (pc.gs.o !== c.sab.o || pc.gs.k !== c.sab.k)) W.push(`Sabahki durum, dünkü gün sonuyla (${pc.gs.o} oda / ${pc.gs.k} kişi) aynı değil`); }
+  return { c, E, W, ok };
+}
+
+/* ---------- Rapor görseli ---------- */
+function drawReport() {
+  const { c } = checkDay(D), cap = S.set.oda, beds = S.set.yatak, W = 1080, M = 24, IW = W - 2 * M, G = 16, K = 2, FONT = 'Segoe UI, Arial, sans-serif';
+  const vals = [c.gs.o, ...D.tahmin.map(Number)];
+  const paint = ctx => {
+    const path = (x, y, w, h, r) => { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
+    const box = (x, y, w, h, r, fill, stroke) => { path(x, y, w, h, r); if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 1.5; ctx.stroke(); } };
+    const T = (t, x, y, o = {}) => {
+      let s = o.size || 16; const f = () => `${o.bold ? '700' : '400'} ${s}px ${FONT}`; ctx.font = f();
+      if (o.maxW) while (s > 9 && ctx.measureText(String(t)).width > o.maxW) { s--; ctx.font = f(); }
+      ctx.fillStyle = o.color || '#1b2430'; ctx.textAlign = o.align || 'left'; ctx.textBaseline = 'middle'; ctx.fillText(String(t), x, y);
+    };
+    let y = M;
+    // Başlık
+    box(M, y, IW, 116, 16, '#1f3864');
+    T(`${S.set.ad} · GÜNLÜK DOLULUK RAPORU`, M + 26, y + 30, { size: 17, bold: true, color: '#b9c7e6', maxW: IW - 300 });
+    T(longDate(S.date), M + 26, y + 76, { size: 36, bold: true, color: '#fff', maxW: IW - 330 });
+    T(pct(c.gs.o / cap), M + IW - 26, y + 48, { size: 44, bold: true, color: '#fff', align: 'right' });
+    T(`${c.gs.o} / ${cap} oda dolu`, M + IW - 26, y + 90, { size: 16, color: '#b9c7e6', align: 'right' });
+    y += 116 + G;
+    // KPI
+    const kp = [['GÜN SONU', `${c.gs.o} oda`, `${c.gs.k} kişi`, '#1f6fb2'], ['ODA DOLULUK', pct(c.gs.o / cap), `${c.gs.o} / ${cap}`, '#2e9e4f'],
+      ['YATAK DOLULUK', pct(c.kg / beds), `${c.kg} / ${beds}`, '#c98a00'], ['GÜNLÜK GELİR', TL(c.gelir), 'toplam', '#d9622b'], ['ORT. ODA FİYATI', c.gs.o ? TL(c.gelir / c.gs.o) : '—', c.kg ? `kişi: ${TL(c.gelir / c.kg)}` : '', '#6b7f94']];
+    const kg = 10, kw = (IW - kg * 4) / 5;
+    kp.forEach((k, i) => {
+      const x = M + i * (kw + kg); box(x, y, kw, 100, 12, '#fff', '#d5dbe5'); box(x + 12, y, kw - 24, 5, 2, k[3]);
+      T(k[0], x + kw / 2, y + 26, { size: 13, bold: true, color: '#667085', align: 'center' });
+      T(k[1], x + kw / 2, y + 57, { size: 28, bold: true, color: k[3], align: 'center', maxW: kw - 14 });
+      T(k[2], x + kw / 2, y + 83, { size: 14, color: '#667085', align: 'center', maxW: kw - 14 });
+    });
+    y += 100 + G;
+    // Grafik
+    const CH = 350; box(M, y, IW, CH, 14, '#fff', '#d5dbe5');
+    T('DOLULUK — 9 GÜNLÜK GÖRÜNÜM (dolu oda sayısı)', M + 20, y + 28, { size: 19, bold: true });
+    box(M + IW - 330, y + 18, 14, 14, 3, '#1f3864'); T('Bugün (gün sonu)', M + IW - 310, y + 25, { size: 14, color: '#475569' });
+    box(M + IW - 170, y + 18, 14, 14, 3, '#4a74c9'); T('Rezervasyon', M + IW - 150, y + 25, { size: 14, color: '#475569' });
+    const px0 = M + 62, px1 = M + IW - 26, py0 = y + 62, py1 = y + CH - 66;
+    const axisMax = Math.max(Math.ceil(cap / 20) * 20, Math.ceil(Math.max(...vals) / 20) * 20), step = axisMax > 200 ? 40 : 20;
+    const yAt = v => py1 - (py1 - py0) * v / axisMax;
+    for (let v = 0; v <= axisMax; v += step) { ctx.strokeStyle = '#e5e9f0'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(px0, yAt(v)); ctx.lineTo(px1, yAt(v)); ctx.stroke(); T(v, px0 - 10, yAt(v), { size: 13, color: '#667085', align: 'right' }); }
+    ctx.setLineDash([6, 5]); ctx.strokeStyle = '#d9622b'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(px0, yAt(cap)); ctx.lineTo(px1, yAt(cap)); ctx.stroke(); ctx.setLineDash([]);
+    T(`Kapasite ${cap}`, px1, yAt(cap) - 9, { size: 13, color: '#d9622b', align: 'right', bold: true });
+    const slot = (px1 - px0) / 9, bw = slot * 0.56;
+    vals.forEach((v, i) => {
+      const x = px0 + slot * i + (slot - bw) / 2, top = yAt(v);
+      box(x, top, bw, Math.max(py1 - top, 1), 3, i === 0 ? '#1f3864' : '#4a74c9');
+      const lab = String(v); ctx.font = `700 17px ${FONT}`; const cw = ctx.measureText(lab).width + 18, cy = Math.max(top - 34, py0 - 12);
+      box(x + bw / 2 - cw / 2, cy, cw, 26, 8, '#f4b183'); T(lab, x + bw / 2, cy + 13.5, { size: 17, bold: true });
+      const d = iso(i);
+      T(shortDate(d), x + bw / 2, py1 + 20, { size: 14, bold: true, color: '#1b2430', align: 'center', maxW: slot - 4 });
+      T(`${DAYS3[dow(d)]} · ${pct(v / cap)}`, x + bw / 2, py1 + 42, { size: 12, color: '#667085', align: 'center', maxW: slot - 2 });
+    });
+    y += CH + G;
+    // Tablolar
+    const lw = 610, rw = IW - lw - 12, hh = 52, rh = 46;
+    const dash = n => n === 0 ? '–' : n;
+    const L = [['SABAHKİ DURUM', c.sab], ['BEKLENEN GELİŞLER', c.bg, 1], ['BEKLENEN ÇIKIŞLAR', c.bc, 1], ['ŞİMDİKİ DURUM', c.sd], ['GERÇEKLEŞEN GELİŞLER', c.gel], ['BUGÜN AYRILMIŞ OLANLAR', c.ayr], ['GÜN SONU', c.gs]];
+    box(M, y, lw, hh + L.length * rh, 10, '#fff', '#9fb0d0');
+    box(M, y, lw, hh, 10, '#1f3864'); ctx.fillStyle = '#1f3864'; ctx.fillRect(M, y + 30, lw, hh - 30);
+    const c1 = M + 292, c2 = c1 + 90, c3 = c2 + 90;
+    T('ŞİMDİKİ DURUM', M + 20, y + hh / 2, { size: 18, bold: true, color: '#fff' });
+    T('ODA', c1 + 45, y + hh / 2, { size: 17, bold: true, color: '#fff', align: 'center' }); T('KİŞİ', c2 + 45, y + hh / 2, { size: 17, bold: true, color: '#fff', align: 'center' }); T('YÜZDE', c3 + 62, y + hh / 2, { size: 17, bold: true, color: '#fff', align: 'center' });
+    L.forEach(([lab, p, dim], i) => {
+      const yy = y + hh + i * rh, strong = lab === 'ŞİMDİKİ DURUM' || lab === 'GÜN SONU';
+      ctx.fillStyle = strong ? '#c9d5ef' : i % 2 ? '#e7ecf8' : '#dbe3f5'; ctx.fillRect(M + 1, yy, lw - 2, rh);
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(M, yy + rh); ctx.lineTo(M + lw, yy + rh); ctx.stroke();
+      T(lab, M + 20, yy + rh / 2, { size: 17, bold: true });
+      T(dim ? dash(p.o) : p.o, c1 + 45, yy + rh / 2, { size: 19, bold: true, align: 'center' });
+      T(dim ? dash(p.k) : p.k, c2 + 45, yy + rh / 2, { size: 19, bold: true, align: 'center' });
+      T(dim && p.o === 0 ? '–' : pct(p.o / cap), c3 + 62, yy + rh / 2, { size: 18, bold: strong, align: 'center' });
+    });
+    box(M, y, lw, hh + L.length * rh, 10, null, '#9fb0d0');
+    const rx = M + lw + 12;
+    const R = [['ODA GECELEME', c.gs.o], ['KİŞİ GECELEME', c.kg], ['ODA %', pct(c.gs.o / cap)], ['YATAK %', pct(c.kg / beds)],
+      ['ORT KİŞİ FİYATI', c.kg ? TL(c.gelir / c.kg) : '—'], ['ORT ODA FİYATI', c.gs.o ? TL(c.gelir / c.gs.o) : '—'], ['GÜNLÜK GELİR', TL(c.gelir)]];
+    box(rx, y, rw, hh + R.length * rh, 10, '#fff', '#9fb0d0'); box(rx, y, rw, hh, 10, '#1f3864'); ctx.fillStyle = '#1f3864'; ctx.fillRect(rx, y + 30, rw, hh - 30);
+    T('DOLULUK', rx + rw / 2, y + hh / 2, { size: 18, bold: true, color: '#fff', align: 'center' });
+    R.forEach(([lab, v], i) => {
+      const yy = y + hh + i * rh, strong = lab === 'GÜNLÜK GELİR';
+      ctx.fillStyle = strong ? '#c9d5ef' : i % 2 ? '#e7ecf8' : '#dbe3f5'; ctx.fillRect(rx + 1, yy, rw - 2, rh);
+      ctx.fillStyle = '#fff'; ctx.fillRect(rx + 1 + 232, yy, rw - 234, rh);
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(rx, yy + rh); ctx.lineTo(rx + rw, yy + rh); ctx.stroke();
+      T(lab, rx + 14, yy + rh / 2, { size: 16, bold: true, maxW: 216 });
+      T(v, rx + 232 + (rw - 234) / 2, yy + rh / 2, { size: 19, bold: true, align: 'center', maxW: rw - 246 });
+    });
+    box(rx, y, rw, hh + R.length * rh, 10, null, '#9fb0d0');
+    y += hh + L.length * rh + 14;
+    const now = new Date();
+    T(`Hazırlanma: ${fmt(todayISO())} ${pad(now.getHours())}:${pad(now.getMinutes())}`, W - M, y + 8, { size: 13, color: '#98a2b3', align: 'right' });
+    return y + 24 + M;
+  };
+  const H = paint(document.createElement('canvas').getContext('2d'));
+  const cv = document.createElement('canvas'); cv.width = W * K; cv.height = H * K;
+  const ctx = cv.getContext('2d'); ctx.scale(K, K); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); paint(ctx);
+  return cv;
+}
+
+/* ---------- Arayüz ---------- */
+const FIELDS = ['sabahOda', 'sabahKisi', 'gelenOda', 'gelenKisi', 'ayrilanOda', 'ayrilanKisi', 'bekGelOda', 'bekGelKisi', 'bekCikOda', 'bekCikKisi', 'gelir', 'kisiGec'];
+let confirmed = false;
+function buildTahmin() {
+  $('#tgrid').innerHTML = [...Array(8)].map((_, i) => `<div class="f"><label id="tl${i}"></label><input id="t${i}" type="number" min="0" step="1" inputmode="numeric"></div>`).join('');
+  [...Array(8)].forEach((_, i) => $('#t' + i).addEventListener('input', onInput));
+}
+function renderForm() {
+  FIELDS.forEach(f => { $('#f-' + f).value = D[f] ?? ''; });
+  const lock = D.sabahAuto;
+  $('#f-sabahOda').readOnly = $('#f-sabahKisi').readOnly = lock; $('#unlock').hidden = !lock;
+  $('#sabahnote').textContent = lock ? 'Dünkü gün sonundan otomatik geldi.' : '';
+  [...Array(8)].forEach((_, i) => { $('#t' + i).value = D.tahmin[i] ?? ''; $('#tl' + i).textContent = `${shortDate(iso(i + 1))} ${DAYS3[dow(iso(i + 1))]}`; });
+  $('#rdate').value = S.date; $('#title').textContent = `${S.set.ad} — Günlük Doluluk Raporu`;
+  const prev = S.days[fromDn(dn(S.date) - 1)];
+  $('#hint').textContent = prev && prev.tahmin[0] !== '' ? `Dünkü tahmine göre bugünün gün sonu: ${prev.tahmin[0]} oda.` : '';
+}
+function readForm() {
+  FIELDS.forEach(f => { const v = $('#f-' + f).value; D[f] = v === '' ? '' : +v; });
+  D.tahmin = [...Array(8)].map((_, i) => { const v = $('#t' + i).value; return v === '' ? '' : +v; });
+}
+function onInput() { readForm(); S.days[S.date] = D; confirmed = false; save(); renderCalc(); }
+FIELDS.forEach(f => $('#f-' + f).addEventListener('input', onInput));
+$('#unlock').onclick = () => { D.sabahAuto = false; S.days[S.date] = D; save(); renderForm(); renderCalc(); };
+
+function renderCalc() {
+  const { c, E, W } = checkDay(D); let h = '';
+  const complete = E.length === 0;
+  if (E.length) h = `<div class="msg bad"><b>⚠ ${E.length} eksik/hata var:</b><ul>${E.map(e => `<li>${esc(e)}</li>`).join('')}</ul></div>`;
+  else {
+    const cap = S.set.oda;
+    h = `<div class="card"><b>Kontrol edin</b><div class="sum">
+      <div>Şimdiki durum<b>${c.sd.o} oda / ${c.sd.k} kişi · ${pct(c.sd.o / cap)}</b></div>
+      <div>Gün sonu<b>${c.gs.o} oda / ${c.gs.k} kişi · ${pct(c.gs.o / cap)}</b></div>
+      <div>Yatak %<b>${pct(c.kg / S.set.yatak)}</b></div>
+      <div>Günlük gelir<b>${TL(c.gelir)}</b></div>
+      <div>Ort. oda / kişi fiyatı<b>${c.gs.o ? TL(c.gelir / c.gs.o) : '—'} / ${c.kg ? TL(c.gelir / c.kg) : '—'}</b></div></div>
+      ${W.map(w => `<div class="msg warn">⚠ ${esc(w)}</div>`).join('')}
+      <label style="display:flex;gap:10px;align-items:center;cursor:pointer;margin-top:6px"><input type="checkbox" id="ok" style="width:22px;height:22px" ${confirmed ? 'checked' : ''}><b>${W.length ? 'Uyarıları ve rakamları kontrol ettim, doğru' : 'Rakamları kontrol ettim, doğru'}</b></label></div>`;
+  }
+  $('#calc').innerHTML = h;
+  const okEl = $('#ok'); if (okEl) okEl.onchange = () => { confirmed = okEl.checked; renderCalc(); };
+  $('#gen').disabled = !(complete && confirmed);
+  $('#dirtymsg').innerHTML = dirty ? '<div class="msg warn">💾 Değişiklikler henüz dosyaya kaydedilmedi — gün sonunda <b>Günün dosyasını kaydet</b> butonuna basın.</div>' : '';
+}
+function invalidate() { lastCanvas = null; $('#result').innerHTML = ''; $('#actions').hidden = true; }
+$('#gen').onclick = () => {
+  if (checkDay(D).E.length || !confirmed) return;
+  lastCanvas = drawReport();
+  $('#result').innerHTML = `<img alt="Günlük doluluk raporu" src="${lastCanvas.toDataURL('image/png')}">`;
+  $('#actions').hidden = false; $('#share').hidden = !(navigator.canShare && navigator.share);
+};
+const fname = () => `Muskebi_Gunluk_Rapor_${fmt(S.date)}.png`;
+const blobOf = () => new Promise(r => lastCanvas.toBlob(r, 'image/png'));
+$('#dl').onclick = async () => { const a = document.createElement('a'); a.href = URL.createObjectURL(await blobOf()); a.download = fname(); a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); };
+$('#share').onclick = async () => {
+  const f = new File([await blobOf()], fname(), { type: 'image/png' });
+  try { if (navigator.canShare({ files: [f] })) await navigator.share({ files: [f], title: `${S.set.ad} ${fmt(S.date)}` }); else alert('Bu cihaz paylaşımı desteklemiyor, "PNG olarak indir" kullanın.'); } catch (e) { /* vazgeçti */ }
+};
+$('#prn').onclick = () => window.print();
+
+$('#rdate').onchange = () => { const v = $('#rdate').value; if (!validISO(v)) return; S.date = v; confirmed = false; save(); loadDay(); renderForm(); renderCalc(); };
+
+/* Gün dosyası ve yeni güne geçiş */
+function saveDayFile() {
+  const seed = { id: CHAIN === 'default' ? (S.chain = S.chain || Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)) : CHAIN, savedAt: Date.now(), data: S };
+  const json = JSON.stringify(seed).replace(/</g, '\\u003c');
+  const html = ORIGINAL.replace(/(<script id="seed" type="application\/json">)[\s\S]*?(<\/script>)/, (m, a, b) => a + json + b);
+  dirty = false; renderCalc();
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+  a.download = `Muskebi_Gunluk_Rapor_${fmt(S.date)}.html`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+$('#savefile').onclick = saveDayFile;
+$('#nextday').onclick = () => {
+  const { E } = checkDay(D);
+  if (E.length) return alert('Önce eksik/hataları düzeltin:\n\n• ' + E.join('\n• '));
+  if (!confirm(`${fmt(S.date)} günü kapatılıp ${fmt(iso(1))} gününe geçilsin mi?\n(Gün sonu → yarının sabahki durumu olur, tahmin tablosu bir gün kayar.)`)) return;
+  S.days[S.date] = D; S.date = iso(1); confirmed = false; save(); loadDay(); renderForm(); renderCalc(); invalidate(); scrollTo(0, 0);
+};
+
+/* Ayarlar */
+function renderAyar() { const s = S.set; $('#a-ad').value = s.ad; $('#a-oda').value = s.oda; $('#a-yatak').value = s.yatak; $('#a-max').value = s.maxKisiOda; $('#a-fmin').value = s.fiyatMin; $('#a-fmax').value = s.fiyatMax; }
+$('#a-save').onclick = () => {
+  const ad = $('#a-ad').value.trim().toLocaleUpperCase('tr-TR'), oda = +$('#a-oda').value, yatak = +$('#a-yatak').value, mx = +$('#a-max').value, fmin = +$('#a-fmin').value, fmax = +$('#a-fmax').value;
+  if (!(ad.length >= 3 && Number.isInteger(oda) && oda >= 1 && Number.isInteger(yatak) && yatak >= oda && Number.isInteger(mx) && mx >= 1 && fmin >= 0 && fmax > fmin)) { $('#a-msg').innerHTML = '<div class="msg bad">Ayarlar geçersiz: yatak sayısı oda sayısından az olamaz, fiyat alt sınırı üst sınırdan küçük olmalı.</div>'; return; }
+  S.set = { ad, oda, yatak, maxKisiOda: mx, fiyatMin: fmin, fiyatMax: fmax }; save(); renderAyar(); renderForm(); renderCalc();
+  $('#a-msg').innerHTML = '<div class="msg ok">Ayarlar kaydedildi.</div>';
+};
+$('#b-exp').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(S)], { type: 'application/json' })); a.download = `muskebi-yedek-${todayISO()}.json`; a.click(); };
+$('#b-imp').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  f.text().then(t => { const d = JSON.parse(t); if (!d.days || !d.set) throw 0; if (!confirm('Mevcut veriler yedekle değiştirilecek. Devam?')) return; S = Object.assign(defaults(), d); S.set = Object.assign(defaults().set, S.set); save(); init(); })
+    .catch(() => alert('Geçersiz yedek dosyası.'));
+};
+$('#b-clear').onclick = () => { if (confirm('TÜM günlük kayıtlar silinecek. Emin misiniz?') && confirm('Bu işlem geri alınamaz. Silinsin mi?')) { S = defaults(); save(); init(); } };
+$('#b-demo').onclick = () => {
+  if (Object.keys(S.days).length && !confirm('Mevcut veriler örnek veriyle değiştirilecek. Devam?')) return;
+  S = defaults(); S.date = '2026-09-30';
+  S.days['2026-09-30'] = { sabahOda: 19, sabahKisi: 34, gelenOda: 1, gelenKisi: 3, ayrilanOda: 9, ayrilanKisi: 18, bekGelOda: 0, bekGelKisi: 0, bekCikOda: 0, bekCikKisi: 0,
+    gelir: 61357, kisiGec: 18, tahmin: [27, 48, 62, 38, 14, 30, 31, 29], sabahAuto: false };
+  save(); init();
+};
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('.pane').forEach(p => p.classList.toggle('on', p.id === 'p-' + b.dataset.t));
+});
+function init() { buildTahmin(); loadDay(); renderAyar(); renderForm(); renderCalc(); invalidate(); }
+init();
+</script></body></html>
