@@ -83,8 +83,10 @@ h2{font-size:16px;margin:18px 0 8px;color:var(--pri)}
   <h2>4. Gelir</h2>
   <div class="grid">
     <div class="f"><label>Günlük gelir (₺)</label><input id="f-gelir" type="number" min="0" step="0.01" inputmode="decimal"></div>
-    <div class="f"><label>Kişi geceleme (boşsa gün sonu kişi sayısı)</label><input id="f-kisiGec" type="number" min="0" step="1" inputmode="numeric"></div>
+    <div class="f"><label>Ücretli çocuk</label><input id="f-ucretliCocuk" type="number" min="0" step="1" inputmode="numeric"></div>
+    <div class="f"><label>Ücretsiz çocuk (bebekler dahil)</label><input id="f-ucretsiz" type="number" min="0" step="1" inputmode="numeric"></div>
   </div>
+  <div class="small" id="kisinote"></div>
 
   <h2>5. Önümüzdeki 8 gün — dolu oda sayısı <span class="small">(rezervasyon durumuna göre)</span></h2>
   <div class="grid" id="tgrid"></div>
@@ -174,7 +176,7 @@ const iso = k => fromDn(dn(S.date) + k);
 
 /* ---------- Gün kaydı ---------- */
 const blankDay = () => ({ sabahOda: '', sabahKisi: '', gelenOda: '', gelenKisi: '', ayrilanOda: '', ayrilanKisi: '',
-  bekGelOda: 0, bekGelKisi: 0, bekCikOda: 0, bekCikKisi: 0, gelir: '', kisiGec: '', tahmin: ['', '', '', '', '', '', '', ''], sabahAuto: false });
+  bekGelOda: 0, bekGelKisi: 0, bekCikOda: 0, bekCikKisi: 0, gelir: '', ucretliCocuk: 0, ucretsiz: 0, tahmin: ['', '', '', '', '', '', '', ''], sabahAuto: false });
 function calcDay(d) {
   const P = (a, b) => ({ o: num(a), k: num(b) });
   const sab = P(d.sabahOda, d.sabahKisi), gel = P(d.gelenOda, d.gelenKisi), ayr = P(d.ayrilanOda, d.ayrilanKisi), bg = P(d.bekGelOda, d.bekGelKisi), bc = P(d.bekCikOda, d.bekCikKisi);
@@ -188,7 +190,11 @@ function calcDay(d) {
     sd = { o: sab.o + gel.o - ayr.o, k: sab.k + gel.k - ayr.k };
     gs = { o: sd.o + bg.o - bc.o, k: sd.k + bg.k - bc.k };
   }
-  return { sab, gel, ayr: ay, bg, bc, sd, gs, fileMode, gelir: num(d.gelir), kg: d.kisiGec === '' || d.kisiGec == null ? gs.k : num(d.kisiGec) };
+  let uc = d.ucretsiz === '' || d.ucretsiz == null ? (d.kisiGec !== '' && d.kisiGec != null && !isNaN(+d.kisiGec) ? gs.k - num(d.kisiGec) : 0) : num(d.ucretsiz);
+  const split = fileMode && d.coc != null;   // dosyada yetişkin/çocuk/bebek ayrımı var
+  const ucl = split ? d.coc + d.beb - uc : num(d.ucretliCocuk === '' || d.ucretliCocuk == null ? 0 : d.ucretliCocuk);
+  const yet = split ? d.yet : gs.k - uc - ucl;
+  return { sab, gel, ayr: ay, bg, bc, sd, gs, fileMode, split, uc, kg: gs.k - uc, ucretliCocuk: ucl, yet, gelir: num(d.gelir) };
 }
 function draftFrom(date) {
   const d = blankDay(), prev = S.days[fromDn(dn(date) - 1)];
@@ -232,7 +238,14 @@ function checkDay(d) {
   }
   if (isNaN(c.gelir) || c.gelir < 0) E.push('Günlük gelir girilmeli');
   else if (ok && c.gs.o > 0 && c.gelir === 0) E.push('Gün sonu odası var; günlük gelir 0 olamaz');
-  if (d.kisiGec !== '' && d.kisiGec != null && (!Number.isInteger(c.kg) || c.kg < 0 || (ok && c.kg > c.gs.k))) E.push('Kişi geceleme, gün sonu kişi sayısından fazla olamaz');
+  if (!Number.isInteger(c.uc) || c.uc < 0 || (ok && c.uc > c.gs.k)) E.push('Ücretsiz çocuk sayısı geçersiz (0 ile gün sonu kişi sayısı arasında olmalı)');
+  else if (!c.split && ok && (!Number.isInteger(c.ucretliCocuk) || c.ucretliCocuk < 0 || c.yet < 0)) E.push(`Ücretli çocuk + ücretsiz çocuk (${c.ucretliCocuk} + ${c.uc}) gün sonu kişi sayısını (${c.gs.k}) aşamaz`);
+  else if (!c.split && ok && c.gs.o > 0 && c.yet < 1) E.push('Yetişkin sayısı en az 1 olmalı (ücretli + ücretsiz çocuk toplam kişiden az olmalı)');
+  else if (c.split) {
+    const tot = d.coc + d.beb;
+    if (c.uc < d.beb) E.push(`Ücretsiz çocuk, bebek sayısından (${d.beb}) az olamaz; bebekler ücretsiz çocuğa dahildir`);
+    else if (c.uc > tot) E.push(`Ücretsiz çocuk, dosyadaki çocuk + bebek toplamını (${tot}) aşamaz`);
+  }
   d.tahmin.forEach((v, i) => {
     const n = num(v), l = shortDate(iso(i + 1));
     if (isNaN(n)) E.push(`Tahmin eksik: ${l}`); else if (!Number.isInteger(n) || n < 0 || n > cap) E.push(`Tahmin geçersiz (${l}): 0–${cap} arası tam sayı olmalı`);
@@ -241,6 +254,7 @@ function checkDay(d) {
     const ort = c.gelir / c.gs.o;
     if (c.gs.o > 0 && (ort < S.set.fiyatMin || ort > S.set.fiyatMax)) W.push(`Ortalama oda fiyatı ${TL(ort)} olağan aralığın (${TL(S.set.fiyatMin)} – ${TL(S.set.fiyatMax)}) dışında`);
   }
+  if (ok && !E.length && c.split && d.coc > 0 && c.uc === d.beb) W.push(`Dosyadaki ${d.coc} çocuğun tamamı ücretli sayıldı; ücretsiz çocuk varsa “Ücretsiz çocuk” alanına bebekler dahil toplamı yazın`);
   const prev = S.days[fromDn(dn(S.date) - 1)];
   if (prev && ok) { const pc = calcDay(prev); if (!isNaN(pc.gs.o) && (pc.gs.o !== c.sab.o || pc.gs.k !== c.sab.k)) W.push(`Sabahki durum, dünkü gün sonuyla (${pc.gs.o} oda / ${pc.gs.k} kişi) aynı değil`); }
   return { c, E, W, ok };
@@ -333,6 +347,10 @@ function drawReport() {
     });
     box(rx, y, rw, hh + R.length * rh, 10, null, '#9fb0d0');
     y += hh + L.length * rh + 14;
+    const items = [['YETİŞKİN', c.yet], ['ÜCRETLİ ÇOCUK', c.ucretliCocuk], ['ÜCRETSİZ ÇOCUK (bebek dahil)', c.uc], ['TOPLAM KİŞİ', c.gs.k]];
+    const iw = (IW - 10 * (items.length - 1)) / items.length;
+    items.forEach(([l, v], i) => { const x = M + i * (iw + 10); box(x, y, iw, 70, 10, '#f1f4f9', '#d5dbe5'); T(l, x + iw / 2, y + 22, { size: 13, bold: true, color: '#52627a', align: 'center', maxW: iw - 12 }); T(v, x + iw / 2, y + 49, { size: 26, bold: true, align: 'center' }); });
+    y += 70 + 14;
     const now = new Date();
     T(`Hazırlanma: ${fmt(todayISO())} ${pad(now.getHours())}:${pad(now.getMinutes())}`, W - M, y + 8, { size: 13, color: '#98a2b3', align: 'right' });
     return y + 24 + M;
@@ -344,7 +362,7 @@ function drawReport() {
 }
 
 /* ---------- Arayüz ---------- */
-const FIELDS = ['sabahOda', 'sabahKisi', 'gelenOda', 'gelenKisi', 'ayrilanOda', 'ayrilanKisi', 'bekGelOda', 'bekGelKisi', 'bekCikOda', 'bekCikKisi', 'gelir', 'kisiGec'];
+const FIELDS = ['sabahOda', 'sabahKisi', 'gelenOda', 'gelenKisi', 'ayrilanOda', 'ayrilanKisi', 'bekGelOda', 'bekGelKisi', 'bekCikOda', 'bekCikKisi', 'gelir', 'ucretliCocuk', 'ucretsiz'];
 let confirmed = false;
 function buildTahmin() {
   $('#tgrid').innerHTML = [...Array(8)].map((_, i) => `<div class="f"><label id="tl${i}"></label><input id="t${i}" type="number" min="0" step="1" inputmode="numeric"></div>`).join('');
@@ -353,13 +371,16 @@ function buildTahmin() {
 function fileModeOn() { return D.gsOda !== undefined && D.gsOda !== '' && D.gsOda != null; }
 function renderDerived() {
   const fm = fileModeOn();
-  $('#f-ayrilanOda').readOnly = $('#f-ayrilanKisi').readOnly = fm;
-  if (fm) { const c = calcDay(D); $('#f-ayrilanOda').value = isNaN(c.ayr.o) ? '' : c.ayr.o; $('#f-ayrilanKisi').value = isNaN(c.ayr.k) ? '' : c.ayr.k; }
+  $('#f-ayrilanOda').readOnly = $('#f-ayrilanKisi').readOnly = $('#f-ucretliCocuk').readOnly = fm;
+  if (fm) { const c = calcDay(D); $('#f-ucretliCocuk').value = isNaN(c.ucretliCocuk) ? '' : c.ucretliCocuk; $('#f-ayrilanOda').value = isNaN(c.ayr.o) ? '' : c.ayr.o; $('#f-ayrilanKisi').value = isNaN(c.ayr.k) ? '' : c.ayr.k; }
   $('#gelennote').textContent = fm && D.file ? '(gelen oda dosyadan geldi — yalnızca gelenlerin kişi sayısını girin; ayrılanlar otomatik hesaplanır)' : '';
   $('#f-gelenOda').readOnly = fm && !!D.file;
   const bk = [D.bekGelOda, D.bekGelKisi, D.bekCikOda, D.bekCikKisi].some(v => +v > 0); $('#bek').open = !fm || bk;
-  const f = D.file;
-  $('#srcinfo').innerHTML = fm && f ? `<div class="msg ok">📄 <b>${esc(f.name)}</b> okundu · gün sonu <b>${D.gsOda} oda / ${D.gsKisi} kişi</b> · kişi geceleme ${D.kisiGec} · gelir ${TL(D.gelir)} · 8 günlük tahmin dolduruldu
+  const f = D.file, cc = calcDay(D);
+  $('#kisinote').textContent = isNaN(cc.kg) ? '' : cc.split
+    ? `Dosyada: yetişkin ${D.yet}, çocuk ${D.coc}, bebek ${D.beb} → ücretli çocuk ${cc.ucretliCocuk} (çocuk + bebek − ücretsiz) · ücretsiz çocuk (bebek dahil) ${cc.uc} · kişi geceleme (yetişkin + ücretli çocuk) ${cc.kg}`
+    : `Yetişkin ${cc.yet} · ücretli çocuk ${cc.ucretliCocuk} · ücretsiz çocuk (bebek dahil) ${cc.uc} · kişi geceleme ${cc.kg}`;
+  $('#srcinfo').innerHTML = fm && f ? `<div class="msg ok">📄 <b>${esc(f.name)}</b> okundu · gün sonu <b>${D.gsOda} oda / ${D.gsKisi} kişi</b> · gelir ${TL(D.gelir)} · 8 günlük tahmin dolduruldu
     <button class="btn sec" id="rmfile" style="margin-left:8px;padding:4px 10px">Dosya verisini kaldır</button></div>` : '';
   const rm = $('#rmfile'); if (rm) rm.onclick = () => { D.gsOda = ''; D.gsKisi = ''; D.file = null; S.days[S.date] = D; confirmed = false; save(); renderForm(); renderCalc(); };
 }
@@ -376,7 +397,7 @@ function renderForm() {
 }
 function readForm() {
   const fm = fileModeOn();
-  FIELDS.forEach(f => { if (fm && f.startsWith('ayrilan')) return; const v = $('#f-' + f).value; D[f] = v === '' ? '' : +v; });
+  FIELDS.forEach(f => { if (fm && (f.startsWith('ayrilan') || f === 'ucretliCocuk')) return; const v = $('#f-' + f).value; D[f] = v === '' ? '' : +v; });
   D.tahmin = [...Array(8)].map((_, i) => { const v = $('#t' + i).value; return v === '' ? '' : +v; });
 }
 function onInput() { readForm(); S.days[S.date] = D; confirmed = false; save(); renderDerived(); renderCalc(); }
@@ -392,6 +413,7 @@ function renderCalc() {
     h = `<div class="card"><b>Kontrol edin</b><div class="sum">
       <div>Şimdiki durum<b>${c.sd.o} oda / ${c.sd.k} kişi · ${pct(c.sd.o / cap)}</b></div>
       <div>Gün sonu<b>${c.gs.o} oda / ${c.gs.k} kişi · ${pct(c.gs.o / cap)}</b></div>
+      <div>Kişi dağılımı<b>${c.yet} yetişkin · ${c.ucretliCocuk} ücretli çocuk · ${c.uc} ücretsiz çocuk</b></div>
       <div>Yatak %<b>${pct(c.kg / S.set.yatak)}</b></div>
       <div>Günlük gelir<b>${TL(c.gelir)}</b></div>
       <div>Ort. oda / kişi fiyatı<b>${c.gs.o ? TL(c.gelir / c.gs.o) : '—'} / ${c.kg ? TL(c.gelir / c.kg) : '—'}</b></div></div>
@@ -457,7 +479,7 @@ $('#b-demo').onclick = () => {
   if (Object.keys(S.days).length && !confirm('Mevcut veriler örnek veriyle değiştirilecek. Devam?')) return;
   S = defaults(); S.date = '2026-09-30';
   S.days['2026-09-30'] = { sabahOda: 19, sabahKisi: 34, gelenOda: 1, gelenKisi: 3, ayrilanOda: 9, ayrilanKisi: 18, bekGelOda: 0, bekGelKisi: 0, bekCikOda: 0, bekCikKisi: 0,
-    gelir: 61357, kisiGec: 18, tahmin: [27, 48, 62, 38, 14, 30, 31, 29], sabahAuto: false };
+    gelir: 61357, ucretsiz: 1, tahmin: [27, 48, 62, 38, 14, 30, 31, 29], sabahAuto: false };
   save(); init();
 };
 
@@ -544,7 +566,9 @@ function parseForecast(rows, fileName) {
 }
 function applyForecast(rows, name) {
   const r0 = rows[0]; S.date = r0.iso; loadDay();
-  D.gsOda = r0.dolu; D.gsKisi = r0.top; D.kisiGec = r0.yet + r0.coc; D.gelir = r2(r0.gelir);
+  D.gsOda = r0.dolu; D.gsKisi = r0.top; D.gelir = r2(r0.gelir); D.kisiGec = '';
+  D.yet = r0.yet; D.coc = r0.coc; D.beb = r0.beb;
+  if (D.ucretsiz === '' || D.ucretsiz == null || D.ucretsiz < r0.beb || D.ucretsiz > r0.coc + r0.beb) D.ucretsiz = r0.beb;   // varsayılan: yalnızca bebekler ücretsiz
   D.tahmin = rows.slice(1, 9).map(r => r.dolu);
   D.gelenOda = r0.gelen;   // dosya gün sonunda alınır: tüm gelişler gerçekleşmiş sayılır
   D.bekGelOda = D.bekGelKisi = D.bekCikOda = D.bekCikKisi = 0;
