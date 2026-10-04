@@ -243,7 +243,7 @@ function checkStay(s, selfId) {
   if ((s.kaynakNot || '') !== clean(s.kaynakNot || '')) return 'Kaynak notunda baş/son boşluk olmamalı';
   if (s.durum !== 'İptal') {
     if (+s.tutar === 0 && ![COMP, DIGER].includes(s.kaynak)) return 'Tutar 0 olamaz (yalnızca COMP veya DİĞER için 0 girilebilir)';
-    if (paidOf(s.id) > +s.tutar + 0.005) return `Bu konaklamaya alınan ödemeler (${TL2(paidOf(s.id))}) toplam tutarı aşıyor`;
+    if (paidOf(s.id) > +s.tutar + 0.005 && !S.pays.some(q => q.stayId === s.id && q.fazlaOnay)) return `Bu konaklamaya alınan ödemeler (${TL2(paidOf(s.id))}) toplam tutarı aşıyor`;
   }
   if (!['Geldi', 'Bekleniyor', 'İptal'].includes(s.durum)) return 'Giriş durumu geçersiz';
   if (s.durum !== 'İptal') {
@@ -258,7 +258,7 @@ function guestOn(oda, tarih) {
 }
 function checkPay(p) {
   if (!validISO(p.tarih)) return 'Tarih geçersiz';
-  if (!rooms().includes(+p.oda)) return 'Geçersiz oda no';
+  if (!rooms().includes(+p.oda)) return p.oda ? 'Geçersiz oda no' : 'Oda no seçin';
   if (p.yapan !== clean(p.yapan) || p.yapan.length < 3) return 'Ödemeyi yapan en az 3 harf olmalı, baş/son boşluk olmamalı';
   if (!(+p.tutar > 0)) return 'Tutar 0\'dan büyük olmalı';
   if (!S.set.turler.includes(p.tur)) return 'Ödeme türü listede yok';
@@ -266,9 +266,12 @@ function checkPay(p) {
   if (!st || st.durum === 'İptal') return `Oda ${room2(p.oda)}'da ${fmt(p.tarih)} tarihinde ödemenin ait olduğu bir konaklama seçilmeli`;
   if (+st.oda !== +p.oda) return 'Seçilen konaklama bu odaya ait değil';
   if (dn(p.tarih) < dn(st.giris) || dn(p.tarih) > dn(st.cikis)) return `Ödeme tarihi konaklama aralığının (${fmt(st.giris)} – ${fmt(st.cikis)}) dışında`;
-  const kalan = kalanOf(st, p.id);
-  if (+p.tutar > kalan + 0.005) return `Ödeme kalan bakiyeyi aşıyor (kalan ${TL2(Math.max(kalan, 0))}). Tutarı veya konaklamanın toplam tutarını kontrol edin`;
   return null;
+}
+function payOver(p) {   // bakiyeyi aşan ödeme: hata değil, onay gerektirir
+  const st = S.stays.find(x => x.id === p.stayId); if (!st) return null;
+  const kalan = Math.max(kalanOf(st, p.id), 0);
+  return +p.tutar > kalan + 0.005 ? { kalan, fazla: r2(+p.tutar - kalan) } : null;
 }
 function stayWarn(s) {
   if (s.durum === 'İptal' || !validISO(s.giris) || !validISO(s.cikis)) return null;
@@ -277,8 +280,10 @@ function stayWarn(s) {
 }
 function allWarnings(date) {
   const D = dn(date);
-  return S.stays.filter(s => s.durum !== 'İptal' && validISO(s.giris) && validISO(s.cikis) && dn(s.giris) <= D && dn(s.cikis) > D)
-    .map(s => [s, stayWarn(s)]).filter(x => x[1]).map(([s, w]) => `Oda ${room2(s.oda)} ${s.ad}: ${w}`);
+  const over = S.stays.filter(s => s.durum !== 'İptal' && kalanOf(s) < -0.005 && S.pays.some(q => q.stayId === s.id && q.fazlaOnay))
+    .map(s => `Oda ${room2(s.oda)} ${s.ad}: ödemeler toplam tutarı ${TL2(-kalanOf(s))} aşıyor (fazla ödeme onaylandı)`);
+  return over.concat(S.stays.filter(s => s.durum !== 'İptal' && validISO(s.giris) && validISO(s.cikis) && dn(s.giris) <= D && dn(s.cikis) > D)
+    .map(s => [s, stayWarn(s)]).filter(x => x[1]).map(([s, w]) => `Oda ${room2(s.oda)} ${s.ad}: ${w}`));
 }
 function allErrors() {
   const e = [];
@@ -690,7 +695,10 @@ function checkPayForm() {
   const touched = ['oda', 'yapan', 'tutar', 'tur'].some(k => p[k] !== '');
   const m = touched ? checkPay(p) : 'x';
   const st = S.stays.find(x => x.id === p.stayId);
-  msg($('#o-msg'), touched && m ? 'bad' : 'ok', touched ? (m || `✔ Kayıt geçerli — kalan bakiye ${TL2(kalanOf(st, p.id))} → ${TL2(kalanOf(st, p.id) - p.tutar)}`) : '');
+  const ov = touched && !m ? payOver(p) : null;
+  msg($('#o-msg'), touched && m ? 'bad' : ov ? 'warn' : 'ok', touched ? (m || (ov
+    ? `⚠ Bu ödeme kalan bakiyeyi aşıyor: kalan ${TL2(ov.kalan)}, girilen ${TL2(p.tutar)} (fazla ${TL2(ov.fazla)}). Kaydet'e basınca onayınız istenecek.`
+    : `✔ Kayıt geçerli — kalan bakiye ${TL2(kalanOf(st, p.id))} → ${TL2(kalanOf(st, p.id) - p.tutar)}`)) : '');
   $('#o-save').disabled = !!m;
 }
 ['o-tarih', 'o-oda', 'o-yapan', 'o-tutar', 'o-tur', 'o-acik', 'o-stay'].forEach(id => $('#' + id).addEventListener('input', checkPayForm));
@@ -699,6 +707,11 @@ $('#o-tarih').addEventListener('change', () => { refreshStayOptions(); checkPayF
 $('#o-stay').addEventListener('change', () => { const g = S.stays.find(x => x.id === $('#o-stay').value); if (g && (!$('#o-yapan').value || $('#o-yapan').value === payerAuto)) { $('#o-yapan').value = g.ad; payerAuto = g.ad; } checkPayForm(); });
 $('#o-save').onclick = () => {
   const p = readPay(); if (checkPay(p)) return;
+  const ov = payOver(p);
+  if (ov) {
+    if (!confirm(`Bu ödeme kalan bakiyeyi aşıyor.\n\nKalan: ${TL2(ov.kalan)}\nGirilen: ${TL2(p.tutar)}\nFazla: ${TL2(ov.fazla)}\n\nEmin misiniz? Yine de kaydedilsin mi?`)) return;
+    p.fazlaOnay = true;
+  } else p.fazlaOnay = false;
   const i = S.pays.findIndex(x => x.id === p.id);
   if (i >= 0) S.pays[i] = p; else S.pays.push(p);
   save(); resetPayForm(); render();
