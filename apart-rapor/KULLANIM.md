@@ -80,3 +80,12 @@ ve hata varken rapor oluşturulmaz. Veriler tarayıcıda saklanır; Ayarlar'dan 
 - **Kaydedilmemiş değişiklik uyarısı:** Dosyaya kaydedilmemiş değişiklik varken Rapor sekmesinde sarı uyarı çıkar, sekme kapatılırsa tarayıcı uyarır.
 - Eski kayıtlar açılırken otomatik taşınır: ÖĞRENCİ → DİĞER (ÖĞRENCİ), JOLLYTUR → JOLLY, COMP-MARATON → COMP (MARATON); listede olmayan eski kaynaklar DİĞER'e not olarak aktarılır.
 - Not: `Apart_Gunluk_Rapor_SABLON.xlsx` Excel dosyası bu güncellemeleri içermez; güncel iş akışı `rapor.html`'dir.
+
+### Avans, depozito ve diğer tahsilatlar (Ödemeler sekmesi)
+**Ödeme cinsi** seçilir:
+- **Konaklama ödemesi:** Eskisi gibi; oda ve misafir seçilir, kalan bakiyeyi aşarsa "Emin misiniz?" diye sorulur.
+- **Avans / ön ödeme:** Oda atanmadan girilebilir (ödemeyi yapan + açıklama zorunlu: kimin / ne için, ör. "Öğrenci avansı – Ayşe Demir"). Kayıt, **Bekleyen avanslar** kutusunda durur; oda atanınca **Konaklamaya bağla** ile misafire bağlanır ve o konaklamanın bakiyesinden düşer. Aynı isimde yeni konaklama girilirse sistem avansı bağlamayı kendisi önerir. Avans bağlandığı konaklama iptal edilirse tekrar bekleyen avanslara döner. Bekleyen avanslar Rapor sekmesinde sarı uyarı olarak görünür.
+- **Depozito / Elektrik:** İsteğe bağlı oda ve misafire bağlanır; konaklama bakiyesine **sayılmaz**.
+- **Depozito iadesi:** Tahsilattan eksi olarak düşer; bağlı konaklamada alınan depozitoyu aşarsa "Emin misiniz?" diye sorar.
+- **Diğer:** Açıklama zorunludur.
+Rapordaki ödeme listesinde cins görünür, **Toplam tahsilat** altında cinse göre döküm çıkar (iade eksi olarak).

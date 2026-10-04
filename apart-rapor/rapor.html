@@ -111,20 +111,22 @@ td .btn{padding:4px 9px;font-size:12px;margin-right:3px}
 <section class="pane" id="p-ode">
   <h2 id="o-title">Yeni ödeme</h2>
   <div class="grid">
+    <div class="f" style="grid-column:span 2"><label>Ödeme cinsi</label><select id="o-kat"></select></div>
     <div class="f"><label>Tarih</label><input id="o-tarih" type="date"></div>
-    <div class="f"><label>Oda No</label><select id="o-oda"></select></div>
-    <div class="f" style="grid-column:span 2"><label>Hangi konaklama (misafir)</label><select id="o-stay"></select></div>
+    <div class="f"><label id="o-oda-l">Oda No</label><select id="o-oda"></select></div>
+    <div class="f" style="grid-column:span 2"><label id="o-stay-l">Hangi konaklama (misafir)</label><select id="o-stay"></select></div>
     <div class="f" style="grid-column:span 2"><label>Ödemeyi yapan</label><input id="o-yapan" autocomplete="off"></div>
     <div class="f"><label>Tutar (₺)</label><input id="o-tutar" type="number" min="0.01" step="0.01" inputmode="decimal"></div>
     <div class="f"><label>Ödeme türü</label><select id="o-tur"></select></div>
-    <div class="f" style="grid-column:span 2"><label>Açıklama (isteğe bağlı)</label><input id="o-acik"></div>
+    <div class="f" style="grid-column:span 2"><label id="o-acik-l">Açıklama (isteğe bağlı)</label><input id="o-acik"></div>
   </div>
   <div id="o-msg"></div>
   <div class="row"><button class="btn" id="o-save">Kaydet</button><button class="btn sec" id="o-cancel" hidden>Vazgeç</button></div>
   <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+  <div id="o-avans"></div>
   <div class="row"><h2 style="margin:0">Rapor tarihindeki ödemeler</h2>
   <select id="o-filter" class="btn sec"><option value="day">Sadece rapor tarihi</option><option value="all">Tümü</option></select></div>
-  <div class="tw"><table><thead><tr><th>Tarih</th><th>Oda</th><th>Ödemeyi yapan</th><th>Tutar</th><th>Tür</th><th>Açıklama</th><th></th></tr></thead><tbody id="o-list"></tbody></table></div>
+  <div class="tw"><table><thead><tr><th>Tarih</th><th>Cins</th><th>Oda</th><th>Ödemeyi yapan</th><th>Tutar</th><th>Tür</th><th>Açıklama</th><th></th></tr></thead><tbody id="o-list"></tbody></table></div>
 </section>
 
 <section class="pane" id="p-ayar">
@@ -156,6 +158,10 @@ td .btn{padding:4px 9px;font-size:12px;margin-right:3px}
 
 <dialog id="nd"><div id="nd-body"></div>
   <div class="row"><button class="btn sec" id="nd-save">💾 Bugünün dosyasını kaydet</button><button class="btn" id="nd-go">✅ Yeni güne geç</button><button class="btn sec" id="nd-x">Vazgeç</button></div></dialog>
+<dialog id="lk"><h2 style="margin-top:0">Avansı konaklamaya bağla</h2><div id="lk-info" class="small"></div>
+  <div class="f" style="margin:8px 0"><input id="lk-q" placeholder="Misafir adı / oda ara"></div>
+  <div class="f"><select id="lk-sel" size="8" style="height:auto"></select></div>
+  <div class="row"><button class="btn" id="lk-go">Bağla</button><button class="btn sec" id="lk-x">Vazgeç</button></div></dialog>
 <script id="seed" type="application/json">null</script>
 <script>
 'use strict';
@@ -168,7 +174,7 @@ const validISO = s => /^\d{4}-\d{2}-\d{2}$/.test(s || '') && !isNaN(Date.parse(s
 const dn = s => Math.round(Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10)) / 864e5);
 const fromDn = n => { const d = new Date(n * 864e5); return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`; };
 const fmt = s => s ? `${s.slice(8, 10)}.${s.slice(5, 7)}.${s.slice(0, 4)}` : '';
-const TL = n => '₺' + Number(n).toLocaleString('tr-TR', { maximumFractionDigits: 0 });
+const TL = n => (n < 0 ? '-' : '') + '₺' + Math.abs(Number(n)).toLocaleString('tr-TR', { maximumFractionDigits: 0 });
 const TL2 = n => Number(n).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₺';
 const room2 = n => pad(n);
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -223,7 +229,12 @@ window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); 
 const srcLabel = s => s.kaynak === DIGER ? (s.kaynakNot || DIGER) : s.kaynak + (s.kaynakNot ? ` (${s.kaynakNot})` : '');
 const r2 = n => Math.round(n * 100) / 100;
 const gunluk = s => { const n = dn(s.cikis) - dn(s.giris); return n > 0 ? +s.tutar / n : 0; };
-const paidOf = (stayId, exceptPayId) => S.pays.filter(p => p.stayId === stayId && p.id !== exceptPayId).reduce((t, p) => t + +p.tutar, 0);
+const KATS = ['KONAKLAMA', 'AVANS', 'DEPOZİTO', 'DEPOZİTO İADESİ', 'ELEKTRİK', 'DİĞER'];
+const KAT_LABEL = { 'KONAKLAMA': 'Konaklama ödemesi', 'AVANS': 'Avans / ön ödeme (oda atanmadan olabilir)', 'DEPOZİTO': 'Depozito', 'DEPOZİTO İADESİ': 'Depozito iadesi (ödeme çıkışı)', 'ELEKTRİK': 'Elektrik', 'DİĞER': 'Diğer (açıklama zorunlu)' };
+const katOf = p => p.kat || 'KONAKLAMA';
+const payAmt = p => (katOf(p) === 'DEPOZİTO İADESİ' ? -1 : 1) * +p.tutar;
+const countsToStay = p => katOf(p) === 'KONAKLAMA' || katOf(p) === 'AVANS';
+const paidOf = (stayId, exceptPayId) => S.pays.filter(p => p.stayId === stayId && p.id !== exceptPayId && countsToStay(p)).reduce((t, p) => t + +p.tutar, 0);
 const kalanOf = (s, exceptPayId) => r2(+s.tutar - paidOf(s.id, exceptPayId));
 const rooms = () => { const a = []; for (let i = S.set.oda1; i <= S.set.oda2; i++) a.push(i); return a; };
 
@@ -257,21 +268,40 @@ function guestOn(oda, tarih) {
   return S.stays.find(s => s.durum !== 'İptal' && +s.oda === +oda && dn(s.giris) <= dn(tarih) && dn(s.cikis) >= dn(tarih));
 }
 function checkPay(p) {
+  const kat = katOf(p), hasOda = p.oda !== '' && p.oda != null;
+  if (!KATS.includes(kat)) return 'Ödeme cinsi geçersiz';
   if (!validISO(p.tarih)) return 'Tarih geçersiz';
-  if (!rooms().includes(+p.oda)) return p.oda ? 'Geçersiz oda no' : 'Oda no seçin';
+  if (kat === 'KONAKLAMA' ? !rooms().includes(+p.oda) : (hasOda && !rooms().includes(+p.oda))) return hasOda ? 'Geçersiz oda no' : 'Oda no seçin';
   if (p.yapan !== clean(p.yapan) || p.yapan.length < 3) return 'Ödemeyi yapan en az 3 harf olmalı, baş/son boşluk olmamalı';
   if (!(+p.tutar > 0)) return 'Tutar 0\'dan büyük olmalı';
   if (!S.set.turler.includes(p.tur)) return 'Ödeme türü listede yok';
+  const needNote = kat === 'DİĞER' || ((kat === 'AVANS' || kat === 'DEPOZİTO İADESİ') && !p.stayId);
+  if (needNote && (p.acik || '').length < 2) return kat === 'DİĞER' ? 'Cins “DİĞER” ise açıklama yazın' : 'Oda atanmamış ödemede açıklama yazın (kimin / ne için)';
   const st = S.stays.find(x => x.id === p.stayId);
-  if (!st || st.durum === 'İptal') return `Oda ${room2(p.oda)}'da ${fmt(p.tarih)} tarihinde ödemenin ait olduğu bir konaklama seçilmeli`;
-  if (+st.oda !== +p.oda) return 'Seçilen konaklama bu odaya ait değil';
-  if (dn(p.tarih) < dn(st.giris) || dn(p.tarih) > dn(st.cikis)) return `Ödeme tarihi konaklama aralığının (${fmt(st.giris)} – ${fmt(st.cikis)}) dışında`;
+  if (kat === 'KONAKLAMA') {
+    if (!st || st.durum === 'İptal') return `Oda ${room2(p.oda)}'da ${fmt(p.tarih)} tarihinde ödemenin ait olduğu bir konaklama seçilmeli`;
+    if (+st.oda !== +p.oda) return 'Seçilen konaklama bu odaya ait değil';
+    if (dn(p.tarih) < dn(st.giris) || dn(p.tarih) > dn(st.cikis)) return `Ödeme tarihi konaklama aralığının (${fmt(st.giris)} – ${fmt(st.cikis)}) dışında`;
+  } else if (p.stayId) {
+    if (!st || st.durum === 'İptal') return 'Bağlı konaklama bulunamadı veya iptal edilmiş; ödemeyi başka konaklamaya bağlayın';
+    if (hasOda && +st.oda !== +p.oda) return 'Seçilen konaklama bu odaya ait değil';
+    if (kat === 'AVANS' && dn(p.tarih) > dn(st.cikis)) return 'Avans tarihi konaklamanın çıkış tarihinden sonra olamaz';
+  }
   return null;
 }
 function payOver(p) {   // bakiyeyi aşan ödeme: hata değil, onay gerektirir
   const st = S.stays.find(x => x.id === p.stayId); if (!st) return null;
-  const kalan = Math.max(kalanOf(st, p.id), 0);
-  return +p.tutar > kalan + 0.005 ? { kalan, fazla: r2(+p.tutar - kalan) } : null;
+  const kat = katOf(p);
+  if (kat === 'KONAKLAMA' || kat === 'AVANS') {
+    const kalan = Math.max(kalanOf(st, p.id), 0);
+    return +p.tutar > kalan + 0.005 ? { kalan, fazla: r2(+p.tutar - kalan), etiket: 'kalan bakiyeyi' } : null;
+  }
+  if (kat === 'DEPOZİTO İADESİ') {
+    const sum = k => S.pays.filter(q => q.stayId === st.id && katOf(q) === k && q.id !== p.id).reduce((t, q) => t + +q.tutar, 0);
+    const kalan = Math.max(r2(sum('DEPOZİTO') - sum('DEPOZİTO İADESİ')), 0);
+    return +p.tutar > kalan + 0.005 ? { kalan, fazla: r2(+p.tutar - kalan), etiket: 'alınan depozitoyu' } : null;
+  }
+  return null;
 }
 function stayWarn(s) {
   if (s.durum === 'İptal' || !validISO(s.giris) || !validISO(s.cikis)) return null;
@@ -288,7 +318,7 @@ function allWarnings(date) {
 function allErrors() {
   const e = [];
   S.stays.forEach(s => { const m = checkStay(s, s.id); if (m) e.push(`Konaklama – Oda ${room2(s.oda || 0)} ${s.ad || ''}: ${m}`); });
-  S.pays.forEach(p => { const m = checkPay(p); if (m) e.push(`Ödeme – ${fmt(p.tarih)} Oda ${room2(p.oda || 0)} ${p.yapan || ''}: ${m}`); });
+  S.pays.forEach(p => { const m = checkPay(p); if (m) e.push(`Ödeme – ${fmt(p.tarih)} ${p.oda ? 'Oda ' + room2(p.oda) : 'Odasız'} ${p.yapan || ''}: ${m}`); });
   return e;
 }
 
@@ -419,9 +449,9 @@ function drawReportClassic(date, kirli) {
   y += hPH;
   if (!pays.length) { cell(0, 8, y, hPR, 'Bu gün ödeme alınmadı', { size: 17, color: '#666' }); }
   pays.forEach(p => {
-    cell(0, 0, y, hPR, `${p.oda} NO`, { size: 17 }); cell(1, 1, y, hPR, p.yapan, { size: 18 });
-    cell(2, 2, y, hPR, TL(p.tutar), { size: 18 });
-    cell(3, 8, y, hPR, `${fmt(p.tarih)}     ${p.tur}${p.acik ? '     ' + p.acik : ''}`, { size: 17 });
+    cell(0, 0, y, hPR, p.oda ? `${p.oda} NO` : 'ODASIZ', { size: 17 }); cell(1, 1, y, hPR, p.yapan, { size: 18 });
+    cell(2, 2, y, hPR, TL(payAmt(p)), { size: 18 });
+    cell(3, 8, y, hPR, `${fmt(p.tarih)}     ${p.tur}${katOf(p) !== 'KONAKLAMA' ? '     ' + katOf(p) : ''}${p.acik ? '     ' + p.acik : ''}`, { size: 17 });
     y += hPR;
   });
   return cv;
@@ -551,18 +581,20 @@ function drawReportV2(date) {
     y += 32; const py0 = y;
     pays.forEach((p, r) => {
       c.fillStyle = r % 2 ? '#f6f8fb' : '#fff'; c.fillRect(M, y, IW, 32);
-      [room2(p.oda), p.yapan, TL(p.tutar), p.tur, p.acik || ''].forEach((t, i) => T(t, i === 1 || i === 4 ? px[i] + 10 : px[i] + pw[i] / 2, y + 16, { size: 16, align: i === 1 || i === 4 ? 'left' : 'center', maxW: pw[i] - 16, bold: i === 0 }));
+      [p.oda ? room2(p.oda) : '–', p.yapan, TL(payAmt(p)), p.tur, (katOf(p) !== 'KONAKLAMA' ? katOf(p) + (p.acik ? ' · ' : '') : '') + (p.acik || '')].forEach((t, i) => T(t, i === 1 || i === 4 ? px[i] + 10 : px[i] + pw[i] / 2, y + 16, { size: 16, align: i === 1 || i === 4 ? 'left' : 'center', maxW: pw[i] - 16, bold: i === 0 }));
       y += 32;
     });
     if (!pays.length) { T('Bu gün ödeme alınmadı', M + IW / 2, y + 16, { color: '#667085', align: 'center' }); y += 32; }
     c.strokeStyle = '#c3ccd8'; c.lineWidth = 1.5; c.strokeRect(M + .75, py0 - 32 + .75, IW - 1.5, y - py0 + 32 - 1.5);
     y += 10;
-    const byTur = {}; pays.forEach(p => byTur[p.tur] = (byTur[p.tur] || 0) + +p.tutar);
-    box(M, y, IW, 48, 10, '#e6f4df', '#b9dba7');
+    const byTur = {}, byKat = {}; pays.forEach(p => { byTur[p.tur] = (byTur[p.tur] || 0) + payAmt(p); byKat[katOf(p)] = (byKat[katOf(p)] || 0) + payAmt(p); });
+    const multi = Object.keys(byKat).some(k => k !== 'KONAKLAMA'), bh = multi ? 78 : 48;
+    box(M, y, IW, bh, 10, '#e6f4df', '#b9dba7');
     T('TOPLAM TAHSİLAT', M + 16, y + 24, { size: 16, bold: true });
-    T(TL(pays.reduce((t, p) => t + +p.tutar, 0)), M + 230, y + 24, { size: 24, bold: true });
+    T(TL(pays.reduce((t, p) => t + payAmt(p), 0)), M + 230, y + 24, { size: 24, bold: true });
     T(Object.entries(byTur).map(([k, v]) => `${k} ${TL(v)}`).join('   ·   '), M + IW - 16, y + 24, { size: 16, align: 'right', color: '#334155', maxW: IW - 400 });
-    y += 48 + G;
+    if (multi) T('CİNSİNE GÖRE:  ' + Object.entries(byKat).map(([k, v]) => `${k} ${TL(v)}`).join('   ·   '), M + 16, y + 55, { size: 15, color: '#334155', maxW: IW - 32 });
+    y += bh + G;
     // Yarın
     box(M, y, IW, 82, 12, '#f1f4f9');
     T('YARIN', M + 16, y + 18, { size: 14, bold: true, color: '#667085' });
@@ -600,6 +632,7 @@ function fillSelects() {
   $('#o-tur').innerHTML = '<option value="">Seçin…</option>' + opt(S.set.turler);
   $('#k-kaynak').value = kk; $('#o-tur').value = tt;
   $('#k-kisi').max = S.set.maxKisi;
+  $('#o-kat').innerHTML = KATS.map(k => `<option value="${k}">${esc(KAT_LABEL[k])}</option>`).join('');
 }
 
 function readStay() {
@@ -667,7 +700,14 @@ $('#k-save').onclick = () => {
   if (needsConfirm(s) && !$('#k-ok').checked) return;
   const i = S.stays.findIndex(x => x.id === s.id);
   if (i >= 0) S.stays[i] = s; else S.stays.push(s);
-  S.lastKaynak = s.kaynak; save(); resetStayForm(); render();
+  S.lastKaynak = s.kaynak; save();
+  if (i < 0 && s.durum !== 'İptal') S.pays.filter(q => katOf(q) === 'AVANS' && !q.stayId && q.yapan === s.ad).forEach(q => {
+    if (!confirm(`${q.yapan} adına ${fmt(q.tarih)} tarihli ${TL2(q.tutar)} avans bekliyor.\nBu konaklamaya bağlansın mı?`)) return;
+    const t = { ...q, stayId: s.id, oda: s.oda };
+    if (checkPay(t) || payOver(t)) return alert('Avans bu konaklamaya otomatik bağlanamadı (tutar bakiyeyi aşıyor veya tarih uygun değil). Ödemeler sekmesinden elle bağlayın.');
+    Object.assign(q, t, { fazlaOnay: false }); save();
+  });
+  resetStayForm(); render();
 };
 function resetStayForm() {
   kEdit = null; kOrig = null; tutarSrc = 'total'; ['k-oda', 'k-ad', 'k-kisi', 'k-cikis', 'k-gece', 'k-tutar', 'k-gunluk', 'k-not'].forEach(id => $('#' + id).value = '');
@@ -677,39 +717,56 @@ function resetStayForm() {
 $('#k-cancel').onclick = resetStayForm;
 
 function readPay() {
-  return { id: oEdit || uid(), tarih: $('#o-tarih').value, oda: +$('#o-oda').value || '', yapan: clean($('#o-yapan').value),
+  return { id: oEdit || uid(), kat: $('#o-kat').value || 'KONAKLAMA', tarih: $('#o-tarih').value, oda: +$('#o-oda').value || '', yapan: clean($('#o-yapan').value),
     tutar: $('#o-tutar').value === '' ? '' : r2(+$('#o-tutar').value), tur: $('#o-tur').value, acik: $('#o-acik').value.replace(/\s+/g, ' ').trim(), stayId: $('#o-stay').value };
 }
 let payerAuto = '';
-function refreshStayOptions(keep) {
-  const t = $('#o-tarih').value, o = +$('#o-oda').value, sel = $('#o-stay'), prev = keep || sel.value;
-  const c = validISO(t) && o ? S.stays.filter(x => x.durum !== 'İptal' && +x.oda === o && dn(x.giris) <= dn(t) && dn(x.cikis) >= dn(t)) : [];
-  sel.innerHTML = c.length ? c.map(x => `<option value="${x.id}">${esc(x.ad)} (${fmt(x.giris)} – ${fmt(x.cikis)}) · kalan ${TL2(kalanOf(x, oEdit ? $('#o-stay').dataset.pay : null))}</option>`).join('') : '<option value="">— bu odada/tarihte misafir yok —</option>';
-  const pick = c.find(x => x.id === prev) || c.find(x => dn(x.cikis) > dn(t)) || c[0];
-  if (pick) sel.value = pick.id;
+function refreshStayOptions(keep, reset) {
+  const kat = $('#o-kat').value || 'KONAKLAMA', t = $('#o-tarih').value, o = +$('#o-oda').value, sel = $('#o-stay');
+  const prev = reset ? null : (keep != null ? keep : sel.value), own = oEdit ? sel.dataset.pay : null;
+  const c = validISO(t) && o ? S.stays.filter(x => x.durum !== 'İptal' && +x.oda === o && (kat === 'KONAKLAMA' ? dn(x.giris) <= dn(t) && dn(x.cikis) >= dn(t) : dn(x.cikis) >= dn(t))) : [];
+  const opts = c.map(x => `<option value="${x.id}">${esc(x.ad)} (${fmt(x.giris)} – ${fmt(x.cikis)}) · kalan ${TL2(kalanOf(x, own))}</option>`).join('');
+  sel.innerHTML = kat === 'KONAKLAMA' ? (c.length ? opts : '<option value="">— bu odada/tarihte misafir yok —</option>') : '<option value="">— konaklamaya bağlama —</option>' + opts;
+  let pick = null;
+  if (prev != null && (prev === '' ? kat !== 'KONAKLAMA' : c.some(x => x.id === prev))) pick = prev;
+  if (pick == null) {
+    if (kat === 'KONAKLAMA') pick = ((c.find(x => dn(x.cikis) > dn(t)) || c[0]) || {}).id || '';
+    else if (kat === 'AVANS') pick = '';
+    else pick = ((c.find(x => dn(x.giris) <= dn(t) && dn(x.cikis) > dn(t))) || {}).id || '';
+  }
+  sel.value = pick;
   const g = c.find(x => x.id === sel.value);
   if (g && (!$('#o-yapan').value || $('#o-yapan').value === payerAuto)) { $('#o-yapan').value = g.ad; payerAuto = g.ad; }
+  const k = kat !== 'KONAKLAMA';
+  $('#o-oda').options[0].textContent = k ? '— oda atanmadı —' : 'Seçin…';
+  $('#o-stay-l').textContent = k ? 'Konaklamaya bağla (isteğe bağlı)' : 'Hangi konaklama (misafir)';
+  const noteReq = kat === 'DİĞER' || ((kat === 'AVANS' || kat === 'DEPOZİTO İADESİ') && !sel.value);
+  $('#o-acik-l').textContent = noteReq ? 'Açıklama (zorunlu: kimin / ne için)' : 'Açıklama (isteğe bağlı)';
 }
 function checkPayForm() {
   const p = readPay();
   const touched = ['oda', 'yapan', 'tutar', 'tur'].some(k => p[k] !== '');
   const m = touched ? checkPay(p) : 'x';
   const st = S.stays.find(x => x.id === p.stayId);
+  const bal = st && countsToStay(p);
   const ov = touched && !m ? payOver(p) : null;
   msg($('#o-msg'), touched && m ? 'bad' : ov ? 'warn' : 'ok', touched ? (m || (ov
-    ? `⚠ Bu ödeme kalan bakiyeyi aşıyor: kalan ${TL2(ov.kalan)}, girilen ${TL2(p.tutar)} (fazla ${TL2(ov.fazla)}). Kaydet'e basınca onayınız istenecek.`
-    : `✔ Kayıt geçerli — kalan bakiye ${TL2(kalanOf(st, p.id))} → ${TL2(kalanOf(st, p.id) - p.tutar)}`)) : '');
+    ? `⚠ Bu ödeme ${ov.etiket} aşıyor: kalan ${TL2(ov.kalan)}, girilen ${TL2(p.tutar)} (fazla ${TL2(ov.fazla)}). Kaydet'e basınca onayınız istenecek.`
+    : bal ? `✔ Kayıt geçerli — kalan bakiye ${TL2(kalanOf(st, p.id))} → ${TL2(kalanOf(st, p.id) - p.tutar)}`
+    : katOf(p) === 'AVANS' ? '✔ Kayıt geçerli — oda atanmamış avans olarak kaydedilecek; Ödemeler sekmesinden sonra konaklamaya bağlayabilirsiniz'
+    : '✔ Kayıt geçerli')) : '');
   $('#o-save').disabled = !!m;
 }
-['o-tarih', 'o-oda', 'o-yapan', 'o-tutar', 'o-tur', 'o-acik', 'o-stay'].forEach(id => $('#' + id).addEventListener('input', checkPayForm));
-$('#o-oda').addEventListener('change', () => { refreshStayOptions(); checkPayForm(); });
-$('#o-tarih').addEventListener('change', () => { refreshStayOptions(); checkPayForm(); });
+['o-kat', 'o-tarih', 'o-oda', 'o-yapan', 'o-tutar', 'o-tur', 'o-acik', 'o-stay'].forEach(id => $('#' + id).addEventListener('input', checkPayForm));
+$('#o-kat').addEventListener('change', () => { refreshStayOptions(null, true); checkPayForm(); });
+$('#o-oda').addEventListener('change', () => { refreshStayOptions(null, true); checkPayForm(); });
+$('#o-tarih').addEventListener('change', () => { refreshStayOptions(null, true); checkPayForm(); });
 $('#o-stay').addEventListener('change', () => { const g = S.stays.find(x => x.id === $('#o-stay').value); if (g && (!$('#o-yapan').value || $('#o-yapan').value === payerAuto)) { $('#o-yapan').value = g.ad; payerAuto = g.ad; } checkPayForm(); });
 $('#o-save').onclick = () => {
   const p = readPay(); if (checkPay(p)) return;
   const ov = payOver(p);
   if (ov) {
-    if (!confirm(`Bu ödeme kalan bakiyeyi aşıyor.\n\nKalan: ${TL2(ov.kalan)}\nGirilen: ${TL2(p.tutar)}\nFazla: ${TL2(ov.fazla)}\n\nEmin misiniz? Yine de kaydedilsin mi?`)) return;
+    if (!confirm(`Bu ödeme ${ov.etiket} aşıyor.\n\nKalan: ${TL2(ov.kalan)}\nGirilen: ${TL2(p.tutar)}\nFazla: ${TL2(ov.fazla)}\n\nEmin misiniz? Yine de kaydedilsin mi?`)) return;
     p.fazlaOnay = true;
   } else p.fazlaOnay = false;
   const i = S.pays.findIndex(x => x.id === p.id);
@@ -718,7 +775,7 @@ $('#o-save').onclick = () => {
 };
 function resetPayForm() {
   oEdit = null; payerAuto = ''; ['o-oda', 'o-yapan', 'o-tutar', 'o-tur', 'o-acik'].forEach(id => $('#' + id).value = '');
-  $('#o-tarih').value = S.date; refreshStayOptions(); $('#o-title').textContent = 'Yeni ödeme'; $('#o-cancel').hidden = true; checkPayForm();
+  $('#o-kat').value = 'KONAKLAMA'; $('#o-tarih').value = S.date; refreshStayOptions(null, true); $('#o-title').textContent = 'Yeni ödeme'; $('#o-cancel').hidden = true; checkPayForm();
 }
 $('#o-cancel').onclick = resetPayForm;
 
@@ -736,7 +793,12 @@ function renderKon() {
 function stayAct(b) {
   const s = S.stays.find(x => x.id === b.dataset.id); if (!s) return;
   if (b.dataset.a === 'geldi') { const t = { ...s, durum: 'Geldi' }; const m = checkStay(t, s.id); if (m) return alert(m); Object.assign(s, t); }
-  if (b.dataset.a === 'iptal') s.durum = 'İptal';
+  if (b.dataset.a === 'iptal') {
+    s.durum = 'İptal';
+    const av = S.pays.filter(q => q.stayId === s.id && katOf(q) === 'AVANS');
+    av.forEach(q => { q.stayId = ''; q.oda = ''; q.fazlaOnay = false; });
+    if (av.length) alert(`${av.length} avans ödemesi bağlı olduğu konaklama iptal edildiği için “Bekleyen avanslar” listesine alındı (Ödemeler sekmesi).`);
+  }
   if (b.dataset.a === 'del') { const np = S.pays.filter(p => p.stayId === s.id).length; if (!confirm(`${s.ad} (oda ${s.oda}) kaydı kalıcı silinsin mi?${np ? `\nBağlı ${np} ödeme kaydı da silinecek.` : ''}\nÇıkmış misafirleri silmeyin; yalnızca hatalı kayıtları silin.`)) return; S.pays = S.pays.filter(p => p.stayId !== s.id); S.stays = S.stays.filter(x => x !== s); }
   if (b.dataset.a === 'edit') {
     kEdit = s.id; $('#k-oda').value = s.oda; $('#k-ad').value = s.ad; $('#k-kisi').value = s.kisi; $('#k-giris').value = s.giris; $('#k-cikis').value = s.cikis;
@@ -754,17 +816,43 @@ function renderOde() {
   const all = $('#o-filter').value === 'all';
   const bad = new Set(S.pays.filter(checkPay).map(p => p.id));
   const list = S.pays.filter(p => all || p.tarih === S.date).sort((a, b) => b.tarih.localeCompare(a.tarih));
-  $('#o-list').innerHTML = list.map(p => `<tr class="${bad.has(p.id) ? 'bad' : ''}"><td>${fmt(p.tarih)}</td><td>${p.oda}</td><td>${esc(p.yapan)}</td><td>${TL2(p.tutar)}</td><td>${esc(p.tur)}</td><td>${esc(p.acik)}</td>
-    <td style="white-space:nowrap"><button class="btn sec" data-a="edit" data-id="${p.id}">Düzenle</button><button class="btn red" data-a="del" data-id="${p.id}">Sil</button></td></tr>`).join('') || '<tr><td colspan="7" class="small">Ödeme yok</td></tr>';
+  const btns = (p, link) => `<td style="white-space:nowrap">${link ? `<button class="btn" data-a="link" data-id="${p.id}">Konaklamaya bağla</button>` : ''}<button class="btn sec" data-a="edit" data-id="${p.id}">Düzenle</button><button class="btn red" data-a="del" data-id="${p.id}">Sil</button></td>`;
+  $('#o-list').innerHTML = list.map(p => `<tr class="${bad.has(p.id) ? 'bad' : ''}"><td>${fmt(p.tarih)}</td><td>${esc(katOf(p))}</td><td>${p.oda || '—'}</td><td>${esc(p.yapan)}</td><td>${TL2(payAmt(p))}</td><td>${esc(p.tur)}</td><td>${esc(p.acik)}</td>
+    ${btns(p, katOf(p) === 'AVANS' && !p.stayId)}</tr>`).join('') || '<tr><td colspan="8" class="small">Ödeme yok</td></tr>';
+  const av = S.pays.filter(p => katOf(p) === 'AVANS' && !p.stayId).sort((a, b) => a.tarih.localeCompare(b.tarih));
+  $('#o-avans').innerHTML = av.length ? `<div class="card" style="background:#fffaf0"><h3>⏳ Bekleyen avanslar — oda atanmamış (${av.length} adet · toplam ${TL2(av.reduce((t, p) => t + +p.tutar, 0))})</h3>
+    <div class="tw"><table><thead><tr><th>Tarih</th><th>Ödemeyi yapan</th><th>Tutar</th><th>Tür</th><th>Açıklama</th><th></th></tr></thead><tbody>${av.map(p => `<tr><td>${fmt(p.tarih)}</td><td>${esc(p.yapan)}</td><td>${TL2(p.tutar)}</td><td>${esc(p.tur)}</td><td>${esc(p.acik)}</td>${btns(p, true)}</tr>`).join('')}</tbody></table></div></div>` : '';
 }
-$('#o-list').onclick = e => {
-  const b = e.target.closest('button'); if (!b) return;
+function payAct(b) {
   const p = S.pays.find(x => x.id === b.dataset.id); if (!p) return;
   if (b.dataset.a === 'del') { if (!confirm('Ödeme kaydı silinsin mi?')) return; S.pays = S.pays.filter(x => x !== p); save(); render(); return; }
-  oEdit = p.id; $('#o-tarih').value = p.tarih; $('#o-oda').value = p.oda; $('#o-stay').dataset.pay = p.id; refreshStayOptions(p.stayId); $('#o-yapan').value = p.yapan; $('#o-tutar').value = p.tutar; $('#o-tur').value = p.tur; $('#o-acik').value = p.acik;
+  if (b.dataset.a === 'link') { openLink(p); return; }
+  oEdit = p.id; $('#o-kat').value = katOf(p); $('#o-tarih').value = p.tarih; $('#o-oda').value = p.oda || ''; $('#o-stay').dataset.pay = p.id; refreshStayOptions(p.stayId || '', false); $('#o-yapan').value = p.yapan; $('#o-tutar').value = p.tutar; $('#o-tur').value = p.tur; $('#o-acik').value = p.acik;
   $('#o-title').textContent = 'Ödemeyi düzenle'; $('#o-cancel').hidden = false; checkPayForm(); scrollTo(0, 0);
-};
+}
+$('#o-list').onclick = e => { const b = e.target.closest('button'); if (b) payAct(b); };
+$('#o-avans').onclick = e => { const b = e.target.closest('button'); if (b) payAct(b); };
 $('#o-filter').onchange = renderOde;
+
+/* Avansı konaklamaya bağlama */
+let linkPay = null;
+function lkRender() {
+  const q = clean($('#lk-q').value), p = linkPay;
+  const c = S.stays.filter(x => x.durum !== 'İptal' && dn(x.cikis) >= dn(p.tarih) && (!q || (x.ad + ' ' + room2(x.oda)).includes(q)))
+    .sort((a, b) => (b.ad === p.yapan) - (a.ad === p.yapan) || dn(a.giris) - dn(b.giris) || a.oda - b.oda);
+  $('#lk-sel').innerHTML = c.map(x => `<option value="${x.id}">${room2(x.oda)} · ${esc(x.ad)} (${fmt(x.giris)} – ${fmt(x.cikis)}) · kalan ${TL2(kalanOf(x))}</option>`).join('') || '<option value="">Uygun konaklama yok</option>';
+  if (c.length) $('#lk-sel').value = c[0].id;
+}
+function openLink(p) { linkPay = p; $('#lk-info').textContent = `${p.yapan} · ${TL2(p.tutar)} · ${fmt(p.tarih)}${p.acik ? ' · ' + p.acik : ''}`; $('#lk-q').value = ''; lkRender(); $('#lk').showModal(); }
+$('#lk-q').oninput = lkRender;
+$('#lk-x').onclick = () => $('#lk').close();
+$('#lk-go').onclick = () => {
+  const st = S.stays.find(x => x.id === $('#lk-sel').value); if (!st) return;
+  const t = { ...linkPay, stayId: st.id, oda: st.oda }; const m = checkPay(t); if (m) return alert(m);
+  const ov = payOver(t);
+  if (ov) { if (!confirm(`Bu avans ${ov.etiket} aşıyor.\n\nKalan: ${TL2(ov.kalan)}\nAvans: ${TL2(t.tutar)}\nFazla: ${TL2(ov.fazla)}\n\nEmin misiniz? Yine de bağlansın mı?`)) return; t.fazlaOnay = true; } else t.fazlaOnay = false;
+  Object.assign(linkPay, t); save(); $('#lk').close(); render();
+};
 
 function renderQuick(R) {
   const li = (s, btns = '') => `<li><b>${room2(s.oda)}</b> · ${esc(s.ad)} · ${s.kisi} kişi ${btns}</li>`;
@@ -804,6 +892,8 @@ function renderRapor() {
   renderQuick(R); renderKirli(R);
   const warns = allWarnings(date);
   if (warns.length) html += `<div class="msg warn"><b>⚠ Kontrol edin (raporu engellemez):</b><ul>${warns.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>`;
+  const avp = S.pays.filter(q => katOf(q) === 'AVANS' && !q.stayId);
+  if (avp.length) html += `<div class="msg warn">⏳ Oda atanmamış <b>${avp.length}</b> avans bekliyor (toplam ${TL2(avp.reduce((t, q) => t + +q.tutar, 0))}) — Ödemeler sekmesinden konaklamaya bağlayın.</div>`;
   if (dirty) html += '<div class="msg warn">💾 Değişiklikler henüz dosyaya kaydedilmedi — gün sonunda <b>Günün dosyasını kaydet</b> butonuna basın.</div>';
   $('#status').innerHTML = html; $('#gen').disabled = !ok;
 }
